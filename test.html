@@ -1,0 +1,68 @@
+<html>
+	<head>
+		<title>My first Three.js app</title>
+		<style>
+			body { margin: 0; }
+			canvas { 
+            position:absolute;
+            left:0px;
+            top:0px}
+		</style>
+	</head>
+	<body>
+		<script src="three.min.js"></script>
+		<script>
+        // ThreeJS code from ThreeJS documentation:
+        // http://threejs.org/docs/#Manual/Introduction/Creating_a_scene
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			var material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+			var cube = new THREE.Mesh( geometry, material );
+			scene.add( cube );
+
+			camera.position.z = 5;
+
+			var render = function () {
+				//requestAnimationFrame( render );
+
+				cube.rotation.x += 1;
+				cube.rotation.y += 1;
+
+				renderer.render(scene, camera);
+			};
+
+			render();
+		</script>
+        <canvas id="cv"> </canvas>
+        <script>
+            var D = new Date();
+            var time1 = D.getTime();
+            var c=document.getElementById("cv");
+            c.width = window.innerWidth;
+            c.height = window.innerHeight;
+            var ctx=c.getContext("2d");
+            ctx.font="12pt Times New Roman";
+            ctx.fillStyle="white";
+            var xvar = 50;
+            var yvar = 50;
+            for(i=0; i<55000; i++){
+                xvar += 3;
+                if(xvar > window.innerWidth){
+                    yvar+=10;
+                    xvar = 0;
+                }
+                ctx.fillText("Hello World!",xvar,yvar);
+            }
+            ctx.fillText("Hello World!",1,1);
+            
+            var time2 = D.getTime()
+            alert(time1-time2);
+        </script>
+	</body>
+</html>
