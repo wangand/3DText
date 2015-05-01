@@ -26,7 +26,7 @@
 	</head>
 	<body>
 
-		<div id="info">
+		<!--div id="info">
 		<a href="http://threejs.org" target="_blank">three.js</a> - procedural 3D text by <a href="http://www.lab4games.net/zz85/blog" target="_blank">zz85</a> &amp; alteredq
 		(fonts from <a href="http://typeface.neocracy.org/">typeface.js</a> and <a href="http://en.wikipedia.org/wiki/Droid_%28font%29">Droid</a>)
 		<br/>type to enter new text, drag to spin the text
@@ -36,7 +36,7 @@
 			<span class="button" id="bevel">change bevel</span>,
 			<span class="button" id="postprocessing">change postprocessing</span>,
 			<a id="permalink" href="#">permalink</a>
-		</div>
+		</div-->
 
 
 		<script src="three.min.js"></script>
@@ -76,17 +76,17 @@
 
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
-			var container, stats, permalink, hex, color;
+			//var container, stats, permalink, hex, color;
 
 			var camera, cameraTarget, scene, renderer;
 
-			var composer;
-			var effectFXAA;
+			//var composer;
+			//var effectFXAA;
 
 			var group, textMesh1, textMesh2, textGeo, material;
 
-			var firstLetter = true;
-
+			//var firstLetter = true;
+/*
 			var text = "three.js",
 
 				height = 20,
@@ -103,8 +103,8 @@
 				font = "optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
 				weight = "bold", // normal bold
 				style = "normal"; // normal italic
-
-			var mirror = true;
+*/
+//			var mirror = true;
 
 			var fontMap = {
 
@@ -138,11 +138,17 @@
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
 
-			var postprocessing = { enabled : false };
-			var glow = 0.9;
+			//var postprocessing = { enabled : false };
+			//var glow = 0.9;
 
 			init();
-			animate();
+            render();
+            group = new THREE.Group();
+			group.position.y = 100;
+			scene.add( group );
+			createText();
+			//animate();
+            render();
 
 			function capitalize( txt ) {
 
@@ -168,7 +174,7 @@
 				// CAMERA
 
 				camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 1500 );
-				camera.position.set( 0, 400, 700 );
+				camera.position.set( 0, 150, 700 );
 
 				cameraTarget = new THREE.Vector3( 0, 150, 0 );
 
@@ -193,6 +199,7 @@
 
 				// Get text from hash
 
+                /*
 				var hash = document.location.hash.substr( 1 );
 
 				if ( hash.length !== 0 ) {
@@ -223,19 +230,23 @@
 					hex = decimalToHex( pointLight.color.getHex() );
 
 				}
+                */
 
 				material = new THREE.MeshFaceMaterial( [
-					new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } ), // front
-					new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } ) // side
+					new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, emissive: 0xffffff } ), // front
+					new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading, emissive: 0xffffff } ) // side
 				] );
 
+                /*
 				group = new THREE.Group();
 				group.position.y = 100;
 
 				scene.add( group );
 
 				createText();
+                */
 
+/*
 				var plane = new THREE.Mesh(
 					new THREE.PlaneBufferGeometry( 10000, 10000 ),
 					new THREE.MeshBasicMaterial( { color: 0xffffff, opacity: 0.5, transparent: true } )
@@ -243,6 +254,7 @@
 				plane.position.y = 100;
 				plane.rotation.x = - Math.PI / 2;
 				scene.add( plane );
+*/
 
 				// RENDERER
 
@@ -253,7 +265,7 @@
 				container.appendChild( renderer.domElement );
 
 				// STATS
-
+/*
 				stats = new Stats();
 				stats.domElement.style.position = 'absolute';
 				stats.domElement.style.top = '0px';
@@ -266,7 +278,8 @@
 				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
 				document.addEventListener( 'keypress', onDocumentKeyPress, false );
 				document.addEventListener( 'keydown', onDocumentKeyDown, false );
-
+*/
+                /*
 				document.getElementById( "color" ).addEventListener( 'click', function() {
 
 					pointLight.color.setHSL( Math.random(), 1, 0.5 );
@@ -275,6 +288,8 @@
 					updatePermalink();
 
 				}, false );
+
+
 
 				document.getElementById( "font" ).addEventListener( 'click', function() {
 
@@ -303,6 +318,8 @@
 					refreshText();
 
 				}, false );
+
+
 
 				document.getElementById( "weight" ).addEventListener( 'click', function() {
 
@@ -361,6 +378,7 @@
 				composer.addPass( effectFilm );
 
 				//
+                */
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -381,6 +399,8 @@
 				effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
 
 			}
+            
+            /*
 
 			//
 
@@ -445,8 +465,25 @@
 				}
 
 			}
+            */
 
 			function createText() {
+                var text = "three.js",
+
+				height = 0,
+				size = 70,
+				hover = 30,
+
+				curveSegments = 4,
+
+				bevelThickness = 2,
+				bevelSize = 1.5,
+				bevelSegments = 3,
+				bevelEnabled = false,
+
+				font = "optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
+				weight = "bold", // normal bold
+				style = "normal"; // normal italic
 
 				textGeo = new THREE.TextGeometry( text, {
 
@@ -473,6 +510,7 @@
 				// "fix" side normals by removing z-component of normals for side faces
 				// (this doesn't work well for beveled geometry as then we lose nice curvature around z-axis)
 
+                /*
 				if ( ! bevelEnabled ) {
 
 					var triangleAreaHeuristics = 0.1 * ( height * size );
@@ -511,6 +549,7 @@
 					}
 
 				}
+                */
 
 				var centerOffset = -0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
 
@@ -525,6 +564,7 @@
 
 				group.add( textMesh1 );
 
+                /*
 				if ( mirror ) {
 
 					textMesh2 = new THREE.Mesh( textGeo, material );
@@ -539,9 +579,11 @@
 					group.add( textMesh2 );
 
 				}
+                */
 
 			}
 
+            /*
 			function refreshText() {
 
 				updatePermalink();
@@ -554,17 +596,19 @@
 				createText();
 
 			}
+            /*
 
+/*
 			function onDocumentMouseDown( event ) {
 
 				event.preventDefault();
 
-				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				//document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
 				document.addEventListener( 'mouseout', onDocumentMouseOut, false );
 
 				mouseXOnMouseDown = event.clientX - windowHalfX;
-				targetRotationOnMouseDown = targetRotation;
+				//targetRotationOnMouseDown = targetRotation;
 
 			}
 
@@ -617,9 +661,10 @@
 				}
 
 			}
-
+*/
 			//
 
+            /*
 			function animate() {
 
 				requestAnimationFrame( animate );
@@ -628,15 +673,17 @@
 				stats.update();
 
 			}
+            */
 
 			function render() {
 
-				group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
+				//group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
 
 				camera.lookAt( cameraTarget );
 
 				renderer.clear();
 
+ /*
 				if ( postprocessing.enabled ) {
 
 					composer.render( 0.05 );
@@ -646,6 +693,8 @@
 					renderer.render( scene, camera );
 
 				}
+*/
+                renderer.render( scene, camera );
 
 			}
 
