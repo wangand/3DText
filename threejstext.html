@@ -72,6 +72,10 @@
 		<!-- todo async loader for fonts -->
 
 		<script>
+            // *** timer start ***
+            var D = new Date();
+            var start = D.getTime();
+
 
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
@@ -82,13 +86,25 @@
 
 // *** Actual rendering happens here ***
 
+
 			init();
             render();
             group = new THREE.Group();
-			group.position.y = 100;
+            ynum = 12;
+            xnum = 6;
+            
+
+			group.position.y = 0;
 			scene.add( group );
-			createText();
+            for(i=-ynum;i < ynum; i++){
+                for(j=-xnum;j<xnum;j++){
+                    createText(20*i, 50*j);
+                }
+            }
             render();
+            var end = D.getTime();
+            // *** timer end ***
+            alert(end-start);
             
 // *** Done with rendering ***
 
@@ -102,14 +118,14 @@
 				// CAMERA
 
 				camera = new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 1, 1500 );
-				camera.position.set( 0, 150, 700 );
+				camera.position.set( 0, 0, 1000 );
 
-				cameraTarget = new THREE.Vector3( 0, 150, 0 );
+				cameraTarget = new THREE.Vector3( 0, 0, 0 );
 
 				// SCENE
 
 				scene = new THREE.Scene();
-				scene.fog = new THREE.Fog( 0x000000, 250, 1400 );
+				//scene.fog = new THREE.Fog( 0x000000, 250, 1400 );
 
 				// LIGHTS
 
@@ -130,7 +146,7 @@
 				// RENDERER
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setClearColor( scene.fog.color );
+				//renderer.setClearColor( scene.fog.color );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
@@ -155,12 +171,12 @@
 
 			}
 
-			function createText() {
+			function createText(hover, x) {
                 var text = "three.js",
 
 				height = 0,
-				size = 70,
-				hover = 30,
+				size = 6,
+				//hover = 30,
 
 				curveSegments = 4,
 
@@ -199,7 +215,8 @@
 
 				textMesh1 = new THREE.Mesh( textGeo, material );
 
-				textMesh1.position.x = centerOffset;
+				//textMesh1.position.x = centerOffset;
+                textMesh1.position.x = x;
 				textMesh1.position.y = hover;
 				textMesh1.position.z = 0;
 
@@ -214,7 +231,7 @@
 
 				//group.rotation.y += ( targetRotation - group.rotation.y ) * 0.05;
 
-				camera.lookAt( cameraTarget );
+				//camera.lookAt( cameraTarget );
 
 				renderer.clear();
                 renderer.render( scene, camera );
