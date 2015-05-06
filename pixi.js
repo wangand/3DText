@@ -17272,6 +17272,7 @@ Text.prototype.updateTexture = function ()
  */
 Text.prototype.renderWebGL = function (renderer)
 {
+    console.log("in WebGL renderer");
     if (this.dirty)
     {
         //this.resolution = 1//renderer.resolution;
