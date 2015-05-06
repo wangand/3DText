@@ -13,6 +13,11 @@
 </head>
 <body>
     <script>
+    
+    var loremipsum = [
+        "Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
+    ];
+    
      // *** timer start ***
     var D = new Date();
     var start = D.getTime();
@@ -30,15 +35,18 @@
 //    requestAnimationFrame( animate );
  
     var textArray = {};
-    vertical = 100;
+    vertical = 50;
     horiz = 30;
     count = 0;
     for(i=0; i<vertical; i++){
         for(j=0; j<horiz; j++){
+            // get a random word
+            index = Math.floor(Math.random()*loremipsum.length);
             // Make a text object
-            textArray[count] = new PIXI.Text("Hello", {font:"12px Times New Roman", fill:"white"});
+            //textArray[count] = new PIXI.Text("Hello", {font:"12px Times New Roman", fill:"white"});
+            textArray[count] = new PIXI.Text(loremipsum[index], {font:"12px Times New Roman", fill:"white"});
             // Move the text object
-            textArray[count].position.x = 19*i;
+            textArray[count].position.x = 35*i;
             textArray[count].position.y = 30*j;
             // add to scene
             stage.addChild(textArray[count]);
