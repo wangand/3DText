@@ -4,6 +4,7 @@
 require('./polyfill');
 
 var core = module.exports = require('./core');
+console.log("require polyfill and core required");
 
 // add core plugins.
 core.extras         = require('./extras');
@@ -2907,6 +2908,7 @@ EventEmitter.prototype.listeners = function listeners(event, exists) {
  */
 EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
   var prefix = '~'+ event;
+	//console.log("In EventEmitter.emit()");
 
   if (!this._events || !this._events[prefix]) return false;
 
@@ -6446,6 +6448,7 @@ var math = require('../math'),
 function DisplayObject()
 {
     EventEmitter.call(this);
+	console.log("In DisplayObject constructor");
 
     /**
      * The coordinate of the object relative to the local coordinates of the parent.
@@ -11330,6 +11333,7 @@ function SystemRenderer(system, width, height, options)
 {
     EventEmitter.call(this);
 
+	console.log("In SystemRenderer constructor");
     utils.sayHello(system);
 
     // prepare options
@@ -12595,6 +12599,7 @@ var SystemRenderer = require('../SystemRenderer'),
  */
 function WebGLRenderer(width, height, options)
 {
+	console.log("In WebGLRenderer constructor");
     options = options || {};
 
     SystemRenderer.call(this, 'WebGL', width, height, options);
@@ -12820,6 +12825,7 @@ WebGLRenderer.prototype.render = function (object)
         gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
+	console.log("NO LONGER MAKING TEXT in WebGLRenderer.prototype.render: about to call renderDisplayObject");
     this.renderDisplayObject(object, this.renderTarget);//this.projection);
 };
 
@@ -12832,6 +12838,7 @@ WebGLRenderer.prototype.render = function (object)
  */
 WebGLRenderer.prototype.renderDisplayObject = function (displayObject, renderTarget, clear)//projection, buffer)
 {
+	console.log("In WebGLRenderer.prototype.renderDisplayObject");
     // TODO is this needed...
     //this.blendModeManager.setBlendMode(CONST.BLEND_MODES.NORMAL);
     this.setRenderTarget(renderTarget);
@@ -12844,6 +12851,7 @@ WebGLRenderer.prototype.renderDisplayObject = function (displayObject, renderTar
     // start the filter manager
     this.filterManager.setFilterStack( renderTarget.filterStack );
 
+	console.log("In WebGLRenderer.prototype.renderDisplayObject: about to call renderWebGL");
     // render the scene!
     displayObject.renderWebGL(this);
 
@@ -12859,10 +12867,12 @@ WebGLRenderer.prototype.renderDisplayObject = function (displayObject, renderTar
  */
 WebGLRenderer.prototype.setObjectRenderer = function (objectRenderer)
 {
+	console.log("in WebGLRenderer.prototype.setObjectRenderer");
     if (this.currentRenderer === objectRenderer)
     {
         return;
     }
+	console.log("in WebGLRenderer.prototype.setObjectRenderer: left if statement");
 
     this.currentRenderer.stop();
     this.currentRenderer = objectRenderer;
@@ -15830,6 +15840,7 @@ var math = require('../math'),
 function Sprite(texture)
 {
     Container.call(this);
+	console.log("In Sprite Constructor");
 
     /**
      * The anchor sets the origin point of the texture.
@@ -15898,6 +15909,7 @@ function Sprite(texture)
 
     // call texture setter
     this.texture = texture || Texture.EMPTY;
+	console.log(Texture.EMPTY == this.texture);
 }
 
 // constructor
@@ -16007,7 +16019,9 @@ Sprite.prototype._onTextureUpdate = function ()
 */
 Sprite.prototype._renderWebGL = function (renderer)
 {
+	console.log("In Sprite.prototype._renderWebGL");
     renderer.setObjectRenderer(renderer.plugins.sprite);
+	console.log("In Sprite.prototype._renderWebGL: about to plugins.sprite.render");
     renderer.plugins.sprite.render(this);
 };
 
@@ -16178,6 +16192,7 @@ Sprite.prototype.containsPoint = function( point )
 */
 Sprite.prototype._renderCanvas = function (renderer)
 {
+	console.log("WARNING in canvas sprite renderer");
     if (this.texture.crop.width <= 0 || this.texture.crop.height <= 0)
     {
         return;
@@ -16567,6 +16582,7 @@ SpriteRenderer.prototype.onContextChange = function ()
  */
 SpriteRenderer.prototype.render = function (sprite)
 {
+	console.log("In SpriteRenderer.prototype.render (where plugins.sprite.render leads)");
     var texture = sprite._texture;
 
     //TODO set blend modes..
@@ -16933,6 +16949,7 @@ function Text(text, style, resolution)
      * @member {HTMLCanvasElement}
      */
     this.canvas = document.createElement('canvas');
+	console.log("START MAKING TEXT In Text: canvas created")
 
     /**
      * The canvas 2d context that everything is drawn with
@@ -16962,8 +16979,12 @@ function Text(text, style, resolution)
      */
     this._style = null;
 
+	console.log("In Text: Calling Texture.fromCanvas on this.canvas");
     var texture = Texture.fromCanvas(this.canvas);
     texture.trim = new math.Rectangle();
+	console.log("In Text: Calling Sprite with this(Text) and texture");
+	//console.log(texture);
+	//console.log(this);
     Sprite.call(this, texture);
 
     this.text = text;
@@ -17230,6 +17251,7 @@ Text.prototype.updateText = function ()
             this.context.fillText(lines[i], linePositionX, linePositionY + this._style.padding);
         }
     }
+	console.log("In updateText: 2D text drawn to canvas, about to call updateTexture");
 
     this.updateTexture();
 };
@@ -17241,6 +17263,7 @@ Text.prototype.updateText = function ()
  */
 Text.prototype.updateTexture = function ()
 {
+	console.log("In updateTexture:");
     var texture = this._texture;
 
     texture.baseTexture.hasLoaded = true;
@@ -17260,6 +17283,7 @@ Text.prototype.updateTexture = function ()
     this._width = this.canvas.width / this.resolution;
     this._height = this.canvas.height / this.resolution;
 
+	console.log("In updateTexture: about to call baseTexture.emit()");
     texture.baseTexture.emit('update',  texture.baseTexture);
 
     this.dirty = false;
@@ -17272,7 +17296,7 @@ Text.prototype.updateTexture = function ()
  */
 Text.prototype.renderWebGL = function (renderer)
 {
-    console.log("in WebGL renderer");
+	console.log("in Text.prototype.renderWebGL");
     if (this.dirty)
     {
         //this.resolution = 1//renderer.resolution;
@@ -17280,6 +17304,7 @@ Text.prototype.renderWebGL = function (renderer)
         this.updateText();
     }
 
+	console.log("in Text.prototypeWebGL renderer: about to call Sprite.prototype.renderWebGL");
     Sprite.prototype.renderWebGL.call(this, renderer);
 };
 
@@ -17291,6 +17316,7 @@ Text.prototype.renderWebGL = function (renderer)
  */
 Text.prototype._renderCanvas = function (renderer)
 {
+	console.log("WARNING in Canvas renderer");
     if (this.dirty)
     {
      //   this.resolution = 1//renderer.resolution;
@@ -17474,6 +17500,7 @@ Text.prototype.getBounds = function (matrix)
  */
 Text.prototype.destroy = function (destroyBaseTexture)
 {
+	console.log("MEMORY FREE In Text.prototype.destroy()");
     // make sure to reset the the context and canvas.. dont want this hanging around in memory!
     this.context = null;
     this.canvas = null;
@@ -17502,6 +17529,7 @@ function BaseTexture(source, scaleMode, resolution)
     EventEmitter.call(this);
 
     this.uuid = utils.uuid();
+	console.log("Base Texture Constructor");
 
     /**
      * The Resolution of the texture.
@@ -17900,6 +17928,7 @@ BaseTexture.fromImage = function (imageUrl, crossorigin, scaleMode)
  */
 BaseTexture.fromCanvas = function (canvas, scaleMode)
 {
+	console.log("In BaseTexture.fromCanvas function");
     if (!canvas._pixiId)
     {
         canvas._pixiId = 'canvas_' + utils.uuid();
@@ -18738,6 +18767,7 @@ Texture.fromFrame = function (frameId)
  */
 Texture.fromCanvas = function (canvas, scaleMode)
 {
+	console.log("In Texture.fromCanvas");
     return new Texture(BaseTexture.fromCanvas(canvas, scaleMode));
 };
 

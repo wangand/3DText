@@ -1,0 +1,95 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>pixi.js example</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #FFFFFF;
+        }
+    </style>
+    <script src="pixi.js"></script>
+</head>
+<body>
+    <script>
+    
+    var loremipsum = [
+        "Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
+        "eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore", "magna", "aliqua.", "Ut enim", "ad", "minim",
+        "veniam,", "quis", "nostrud", "exercitation", "ullamco", "laboris", "nisi", "ut", "aliquip", "ex ea", "commodo", "consequat.",
+        "Duis", "aute", "irure", "dolor", "in", "reprehenderit", "in", "voluptate", "velit", "esse", "cillum", "dolore", "eu",
+        "fugiat", "nulla", "pariatur.", "Excepteur", "sint", "occaecat", "cupidatat", "non", "proident,", "sunt", "in", "culpa", 
+        "qui", "officia", "deserunt", "mollit", "anim", "id est", "laborum."
+    ];
+    
+     // *** timer start ***
+    //var D = new Date();
+    //var start = D.getTime();
+            
+    // create an new instance of a pixi stage
+    //var stage = new PIXI.Stage(0x66FF99);
+ 
+    // create a renderer instance.
+    //var renderer = PIXI.autoDetectRenderer(document.body.clientWidth, document.body.clientHeight);
+    var renderer = PIXI.autoDetectRenderer(document.body.clientWidth, document.documentElement.clientHeight-5);
+ 
+    // add the renderer view element to the DOM
+    document.body.appendChild(renderer.view);
+ 
+//    requestAnimationFrame( animate );
+ 
+    var textArray;
+    //vertical = 50;
+    //horiz = 30;
+    //count = 0;
+    
+    // get a random word
+    index = Math.floor(Math.random()*loremipsum.length);
+    // Make a text object
+    //textArray[count] = new PIXI.Text("Hello", {font:"12px Times New Roman", fill:"white"});
+    //textArray = new PIXI.Text(loremipsum[index], {font:"40px Times New Roman", fill:"white"});
+	textArray = new PIXI.Text("Hello\ncat", {font:"40px Times New Roman", fill:"white"});
+    // Move the text object
+    textArray.position.x = 75;
+    textArray.position.y = 70;
+    // add to scene
+    //stage.addChild(textArray);
+    //count++;
+            
+    renderer.render(textArray);
+    //var end = D.getTime();
+    // *** timer end ***
+    //alert(end-start);
+ 
+ /*
+    function animate() {
+ 
+        requestAnimationFrame( animate );
+ 
+        // render the stage   
+        renderer.render(stage);
+    }
+ */
+
+
+/* 
+var obj = {};
+Object.defineProperties(obj, {
+  "property1": {
+    value: true,
+    writable: true
+  },
+  "property2": {
+    value: "Hello",
+    writable: false
+  }
+  // etc. etc.
+});
+console.log(obj.property1);
+*/
+ 
+    </script>
+ 
+    </body>
+</html>
