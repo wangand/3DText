@@ -2,20 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Draw quad with texture</title>
+    <title>WebGL text</title>
   </head>
 
   <body onload="main()">
     <canvas id="webgl" width="400" height="400" style="border:1px solid #000000;">
     Please use a browser that supports "canvas"
     </canvas>
-	<canvas id="canvas2" width="256" height="256" style="border:1px solid #000000;">
+	<canvas id="canvas2" width="256" height="256" style="border:1px solid #000000; background:transparent;">
 	</canvas>
 
-    <script src="./lib/webgl-utils.js"></script>
-    <script src="./lib/webgl-debug.js"></script>
-    <script src="./lib/cuon-utils.js"></script>
-    <script src="./lib/cuon-matrix.js"></script>
+    <!-- Originally, helper functions were used -->
+    <!--script src="./lib/webgl-utils.js"></script-->
+    <!--script src="./lib/webgl-debug.js"></script-->
+    <!--script src="./lib/cuon-utils.js"></script-->
+    <!--script src="./lib/cuon-matrix.js"></script-->
+
     <script>
 // TexturedQuad.js (c) 2012 matsuda and kanda
 // Vertex shader program
@@ -43,17 +45,30 @@ function main() {
 var canvas2 = document.getElementById("canvas2");
 var ctx = canvas2.getContext("2d");
 ctx.font = "30px Arial";
+ctx.fillStyle = "red";
 ctx.fillText("Hello World",10,50);
 
   // Retrieve <canvas> element
   var canvas = document.getElementById('webgl');
 
+  // Get a WebGL context inspired from example on MDN:
+  // https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL
+  gl = null;
+  gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    // Make sure we got a context
+  if (!gl) {
+    alert("Failed to initialize WebGL. Please use a WebGL compatible browser.");
+    gl = null;
+    return;
+  }
+  /* Original code from WebGL Programming Guide by Matsuda and Lea
   // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas);
+  var gl = getWebGLContext(canvas, false);
   if (!gl) {
     console.log('Failed to get the rendering context for WebGL');
     return;
   }
+  */
 
   // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
@@ -77,6 +92,110 @@ ctx.fillText("Hello World",10,50);
     return;
   }
 }
+
+// ***
+// *** *** ***
+// *** *** *** **************************************************************
+// ** TODO ***
+// These utility functions are from the WebGL Programming Guide Book
+// Should be rewritten since it may or may not be open source
+// cuon-utils.js (c) 2012 kanda and matsuda
+/**
+ * Create a program object and make current
+ * @param gl GL context
+ * @param vshader a vertex shader program (string)
+ * @param fshader a fragment shader program (string)
+ * @return true, if the program object was created and successfully made current 
+ */
+function initShaders(gl, vshader, fshader) {
+  var program = createProgram(gl, vshader, fshader);
+  if (!program) {
+    console.log('Failed to create program');
+    return false;
+  }
+
+  gl.useProgram(program);
+  gl.program = program;
+
+  return true;
+}
+/**
+ * Create the linked program object
+ * @param gl GL context
+ * @param vshader a vertex shader program (string)
+ * @param fshader a fragment shader program (string)
+ * @return created program object, or null if the creation has failed
+ */
+function createProgram(gl, vshader, fshader) {
+  // Create shader object
+  var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+  var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+  if (!vertexShader || !fragmentShader) {
+    return null;
+  }
+
+  // Create a program object
+  var program = gl.createProgram();
+  if (!program) {
+    return null;
+  }
+
+  // Attach the shader objects
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+
+  // Link the program object
+  gl.linkProgram(program);
+
+  // Check the result of linking
+  var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+  if (!linked) {
+    var error = gl.getProgramInfoLog(program);
+    console.log('Failed to link program: ' + error);
+    gl.deleteProgram(program);
+    gl.deleteShader(fragmentShader);
+    gl.deleteShader(vertexShader);
+    return null;
+  }
+  return program;
+}
+/**
+ * Create a shader object
+ * @param gl GL context
+ * @param type the type of the shader object to be created
+ * @param source shader program (string)
+ * @return created shader object, or null if the creation has failed.
+ */
+function loadShader(gl, type, source) {
+  // Create shader object
+  var shader = gl.createShader(type);
+  if (shader == null) {
+    console.log('unable to create shader');
+    return null;
+  }
+
+  // Set the shader program
+  gl.shaderSource(shader, source);
+
+  // Compile the shader
+  gl.compileShader(shader);
+
+  // Check the result of compilation
+  var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  if (!compiled) {
+    var error = gl.getShaderInfoLog(shader);
+    console.log('Failed to compile shader: ' + error);
+    gl.deleteShader(shader);
+    return null;
+  }
+
+  return shader;
+}
+// *** END utility functions from WebGL Programming guide by Matsuda and Lea ***
+// Ideally these should be re-written
+// *** *** *** ******************************************************************************
+// *** *** ***
+// ***
 
 function initVertexBuffers(gl) {
   var verticesTexCoords = new Float32Array([
@@ -135,6 +254,7 @@ function initTextures(gl, n) {
     console.log('Failed to get the storage location of u_Sampler');
     return false;
   }
+  /* Originally used to utilize image as texture
   var image = new Image();  // Create the image object
   if (!image) {
     console.log('Failed to create the image object');
@@ -144,6 +264,9 @@ function initTextures(gl, n) {
   image.onload = function(){ loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2")); };
   // Tell the browser to load an image
   image.src = 'sky.jpg';
+  */
+  
+  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
 
   return true;
 }
