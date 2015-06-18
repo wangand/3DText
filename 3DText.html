@@ -9,7 +9,7 @@
     <canvas id="webgl" width="400" height="400" style="border:1px solid #000000;">
     Please use a browser that supports "canvas"
     </canvas>
-	<canvas id="canvas2" width="256" height="256" style="border:1px solid #000000; background:transparent;">
+	<canvas id="canvas2" style="border:1px solid #000000; background:transparent;">
 	</canvas>
 
     <!-- Originally, helper functions were used -->
@@ -42,7 +42,11 @@ var FSHADER_SOURCE =
   '}\n';
 
 function main() {
+// we will write our text on canvas2
+// Note that its size must be a power of 2!
 var canvas2 = document.getElementById("canvas2");
+canvas2.width = 256;
+canvas2.height = 256;
 var ctx = canvas2.getContext("2d");
 ctx.font = "30px Arial";
 ctx.fillStyle = "red";
@@ -70,6 +74,13 @@ ctx.fillText("Hello World",10,50);
   }
   */
 
+  // IMPORTANT
+  // This code allows WebGL to do transparencies
+  // Without these lines, a white box will show up
+  // from: http://webglfundamentals.org/webgl/lessons/webgl-text-texture.html
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  
   // Initialize shaders
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
     console.log('Failed to intialize shaders.');
@@ -267,6 +278,7 @@ function initTextures(gl, n) {
   */
   
   loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+  //loadTexture(gl, n, texture, u_Sampler, canvas2);
 
   return true;
 }
