@@ -12,12 +12,6 @@
 	<canvas id="canvas2" style="border:1px solid #000000; background:transparent;">
 	</canvas>
 
-    <!-- Originally, helper functions were used -->
-    <!--script src="./lib/webgl-utils.js"></script-->
-    <!--script src="./lib/webgl-debug.js"></script-->
-    <!--script src="./lib/cuon-utils.js"></script-->
-    <!--script src="./lib/cuon-matrix.js"></script-->
-
     <script>
 // TexturedQuad.js (c) 2012 matsuda and kanda
 // Vertex shader program
@@ -65,14 +59,6 @@ ctx.fillText("Hello World",10,50);
     gl = null;
     return;
   }
-  /* Original code from WebGL Programming Guide by Matsuda and Lea
-  // Get the rendering context for WebGL
-  var gl = getWebGLContext(canvas, false);
-  if (!gl) {
-    console.log('Failed to get the rendering context for WebGL');
-    return;
-  }
-  */
 
   // IMPORTANT
   // This code allows WebGL to do transparencies
@@ -82,7 +68,7 @@ ctx.fillText("Hello World",10,50);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   
   // Initialize shaders
-  if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+   if (!initializeShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
     console.log('Failed to intialize shaders.');
     return;
   }
@@ -104,109 +90,84 @@ ctx.fillText("Hello World",10,50);
   }
 }
 
-// ***
-// *** *** ***
-// *** *** *** **************************************************************
-// ** TODO ***
-// These utility functions are from the WebGL Programming Guide Book
-// Should be rewritten since it may or may not be open source
-// cuon-utils.js (c) 2012 kanda and matsuda
-/**
- * Create a program object and make current
- * @param gl GL context
- * @param vshader a vertex shader program (string)
- * @param fshader a fragment shader program (string)
- * @return true, if the program object was created and successfully made current 
- */
-function initShaders(gl, vshader, fshader) {
-  var program = createProgram(gl, vshader, fshader);
-  if (!program) {
-    console.log('Failed to create program');
-    return false;
-  }
+// This function initializes shaders
+// modified from cuon-utils.js from WebGL Programming Guide
+// Returns true if shaders successfully initialized in program
+// Returns false otherwise
+function initializeShaders(gl, vshader, fshader){
+	// make and verify vertex shader object
+	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	if(vertexShader == null){
+		console.log("Unable to create vertex shader");
+		return false;
+	}
+	
+	// set vertex shader program source and compile
+	gl.shaderSource(vertexShader, vshader);
+	gl.compileShader(vertexShader);
+	
+	// Check result of vertexShader compilation
+	if(!(gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(vertexShader);
+		console.log('Failed to compile vertex shader: ' + errorMsg);
+		gl.deleteShader(vertexShader);
+		return false;
+	}
+	
+	
+	// make and verify fragment shader object
+	var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	if(fragmentShader == null){
+		console.log("Unable to create fragment shader");
+		return false;
+	}
+	
+	// set fragment shader program source and compile
+	gl.shaderSource(fragmentShader, fshader);
+	gl.compileShader(fragmentShader);
+	
+	// Check result of fragmentShader compilation
+	if(!(gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(fragmentShader);
+		console.log('Failed to compile fragment shader: ' + errorMsg);
+		gl.deleteShader(fragmentShader);
+		return false;
+	}
 
-  gl.useProgram(program);
-  gl.program = program;
+	// Verify both shaders created
+	if(!vertexShader || !fragmentShader){
+		console.log("shaders no load");
+		return false;
+	}
 
-  return true;
+	// make and verify program object
+	var program = gl.createProgram();
+	if(!program){
+		console.log("program no create");
+		return false;
+	}
+
+	// Attach vertex and fragment shader to program object
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+
+	// Link program and verify linkng
+	gl.linkProgram(program);
+	if(!(gl.getProgramParameter(program, gl.LINK_STATUS))){
+		var errorMsg = gl.getProgramInfoLog(program);
+		console.log('Program filed to link: ' + errorMsg);
+		gl.deleteProgram(program);
+		gl.deleteShader(fragmentShader);
+		gl.deleteShader(vertexShader);
+		console.log("no program got");
+		return false;
+	}
+
+	// Use and set the program
+	gl.useProgram(program);
+	gl.program = program;
+	return true;
 }
-/**
- * Create the linked program object
- * @param gl GL context
- * @param vshader a vertex shader program (string)
- * @param fshader a fragment shader program (string)
- * @return created program object, or null if the creation has failed
- */
-function createProgram(gl, vshader, fshader) {
-  // Create shader object
-  var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
-  var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
-  if (!vertexShader || !fragmentShader) {
-    return null;
-  }
-
-  // Create a program object
-  var program = gl.createProgram();
-  if (!program) {
-    return null;
-  }
-
-  // Attach the shader objects
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-
-  // Link the program object
-  gl.linkProgram(program);
-
-  // Check the result of linking
-  var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-  if (!linked) {
-    var error = gl.getProgramInfoLog(program);
-    console.log('Failed to link program: ' + error);
-    gl.deleteProgram(program);
-    gl.deleteShader(fragmentShader);
-    gl.deleteShader(vertexShader);
-    return null;
-  }
-  return program;
-}
-/**
- * Create a shader object
- * @param gl GL context
- * @param type the type of the shader object to be created
- * @param source shader program (string)
- * @return created shader object, or null if the creation has failed.
- */
-function loadShader(gl, type, source) {
-  // Create shader object
-  var shader = gl.createShader(type);
-  if (shader == null) {
-    console.log('unable to create shader');
-    return null;
-  }
-
-  // Set the shader program
-  gl.shaderSource(shader, source);
-
-  // Compile the shader
-  gl.compileShader(shader);
-
-  // Check the result of compilation
-  var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-  if (!compiled) {
-    var error = gl.getShaderInfoLog(shader);
-    console.log('Failed to compile shader: ' + error);
-    gl.deleteShader(shader);
-    return null;
-  }
-
-  return shader;
-}
-// *** END utility functions from WebGL Programming guide by Matsuda and Lea ***
-// Ideally these should be re-written
-// *** *** *** ******************************************************************************
-// *** *** ***
-// ***
 
 function initVertexBuffers(gl) {
   var verticesTexCoords = new Float32Array([
@@ -303,6 +264,136 @@ function loadTexture(gl, n, texture, u_Sampler, image) {
 
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
 }
+
+// THE FOLLOWING IS UTILITY CODE FROM ORIGINAL PROGRAM THAT WAS REPLACED
+// DONE TO BE DELETED LATER
+
+
+  
+  /* Original code from WebGL Programming Guide by Matsuda and Lea
+  // Get the rendering context for WebGL
+  var gl = getWebGLContext(canvas, false);
+  if (!gl) {
+    console.log('Failed to get the rendering context for WebGL');
+    return;
+  }
+  */
+  
+    
+  // Original code for initializing shaders
+  // From WebGL Programming guide by Matsuda and Lea
+  // Initialize shaders
+  /*
+  if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+    console.log('Failed to intialize shaders.');
+    return;
+  }
+  */
+  
+// ***
+// *** *** ***
+// *** *** *** **************************************************************
+// ** TODO *** 
+// These utility functions are from the WebGL Programming Guide Book
+// Should be rewritten since it may or may not be open source
+// cuon-utils.js (c) 2012 kanda and matsuda
+/**
+ * Create a program object and make current
+ * @param gl GL context
+ * @param vshader a vertex shader program (string)
+ * @param fshader a fragment shader program (string)
+ * @return true, if the program object was created and successfully made current 
+ *//*
+function initShaders(gl, vshader, fshader) {
+  var program = createProgram(gl, vshader, fshader);
+  if (!program) {
+    console.log('Failed to create program');
+    return false;
+  }
+
+  gl.useProgram(program);
+  gl.program = program;
+
+  return true;
+}
+/**
+ * Create the linked program object
+ * @param gl GL context
+ * @param vshader a vertex shader program (string)
+ * @param fshader a fragment shader program (string)
+ * @return created program object, or null if the creation has failed
+ *//*
+function createProgram(gl, vshader, fshader) {
+  // Create shader object
+  var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+  var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+  if (!vertexShader || !fragmentShader) {
+    return null;
+  }
+
+  // Create a program object
+  var program = gl.createProgram();
+  if (!program) {
+    return null;
+  }
+
+  // Attach the shader objects
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+
+  // Link the program object
+  gl.linkProgram(program);
+
+  // Check the result of linking
+  var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+  if (!linked) {
+    var error = gl.getProgramInfoLog(program);
+    console.log('Failed to link program: ' + error);
+    gl.deleteProgram(program);
+    gl.deleteShader(fragmentShader);
+    gl.deleteShader(vertexShader);
+    return null;
+  }
+  return program;
+}/*
+/**
+ * Create a shader object
+ * @param gl GL context
+ * @param type the type of the shader object to be created
+ * @param source shader program (string)
+ * @return created shader object, or null if the creation has failed.
+ *//*
+function loadShader(gl, type, source) {
+  // Create shader object
+  var shader = gl.createShader(type);
+  if (shader == null) {
+    console.log('unable to create shader');
+    return null;
+  }
+
+  // Set the shader program
+  gl.shaderSource(shader, source);
+
+  // Compile the shader
+  gl.compileShader(shader);
+
+  // Check the result of compilation
+  var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  if (!compiled) {
+    var error = gl.getShaderInfoLog(shader);
+    console.log('Failed to compile shader: ' + error);
+    gl.deleteShader(shader);
+    return null;
+  }
+
+  return shader;
+}*/
+// *** END utility functions from WebGL Programming guide by Matsuda and Lea ***
+// Ideally these should be re-written
+// *** *** *** ******************************************************************************
+// *** *** ***
+// ***
+// DONE
 
 </script>
   </body>
