@@ -6,14 +6,15 @@
   </head>
 
   <body onload="main()">
-    <canvas id="webgl" width="400" height="400" style="border:1px solid #000000;">
+    <canvas id="webgl" width="1024" height="1024" style="border:1px solid #000000;">
     Please use a browser that supports "canvas"
     </canvas>
-	<canvas id="canvas2" style="border:1px solid #000000; background:transparent;">
+	<canvas id="canvas2" style="border:1px solid #000000; background:transparent; visibility:hidden;">
 	</canvas>
 
     <script>
-// TexturedQuad.js (c) 2012 matsuda and kanda
+// Shader programs from code from matsuda and kanda 2012
+// Found in WebGL Programming Guide
 // Vertex shader program
 var VSHADER_SOURCE =
   'attribute vec4 a_Position;\n' +
@@ -34,21 +35,81 @@ var FSHADER_SOURCE =
   'void main() {\n' +
   '  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
   '}\n';
+  
+var loremipsum = [
+	"Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
+	"eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore", "magna", "aliqua.", "Ut enim", "ad", "minim",
+	"veniam,", "quis", "nostrud", "exercitation", "ullamco", "laboris", "nisi", "ut", "aliquip", "ex ea", "commodo", "consequat.",
+	"Duis", "aute", "irure", "dolor", "in", "reprehenderit", "in", "voluptate", "velit", "esse", "cillum", "dolore", "eu",
+	"fugiat", "nulla", "pariatur.", "Excepteur", "sint", "occaecat", "cupidatat", "non", "proident,", "sunt", "in", "culpa", 
+	"qui", "officia", "deserunt", "mollit", "anim", "id est", "laborum.",
+	"123", "456", "789", "0!@#"
+];
 
 function main() {
-// we will write our text on canvas2
-// Note that its size must be a power of 2!
-var canvas2 = document.getElementById("canvas2");
-canvas2.width = 256;
-canvas2.height = 256;
-var ctx = canvas2.getContext("2d");
-ctx.font = "30px Arial";
-ctx.fillStyle = "red";
-ctx.fillText("Hello World",10,50);
+	 // *** timer start ***
+	var D = new Date();
+	var start = D.getTime();
 
-  // Retrieve <canvas> element
-  var canvas = document.getElementById('webgl');
+	// we will write our text on canvas2
+	// Note that its size must be a power of 2!
+	var canvas2 = document.getElementById("canvas2");
+	if(canvas2.width != 512 || canvas2.height != 512){
+		canvas2.width = 512;
+		canvas2.height = 512;
+	}
+	var ctx = canvas2.getContext("2d");
+	ctx.font = "20px Times New Roman";
+	ctx.fillStyle = "white";
 
+
+	// Retrieve <canvas> element and ready page for rext rendering
+	var canvas = document.getElementById('webgl');
+	setupText(canvas);
+
+	// Specify the color for clearing <canvas>
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
+
+
+	var vertical = 60;
+	var horiz = 20;
+	var count = 0;
+	for(i=0; i<vertical; i++){
+		for(j=0; j<horiz; j++){
+			// get a random word
+			index = Math.floor(Math.random()*loremipsum.length);
+
+			// Ready the quadrilateral
+			// The text will render in quadrilateral
+			var verticesTexCoords = new Float32Array([
+			// Vertex coordinates, texture coordinate
+				-1.0+j*(0.09),  1.0-i*(0.03),   0.0, 1.0,
+				-1.0+j*(0.09),  0.4-i*(0.03),   0.0, 0.0,
+				-0.4+j*(0.09),  1.0-i*(0.03),   1.0, 1.0,
+				-0.4+j*(0.09),  0.4-i*(0.03),   1.0, 0.0,
+			]);
+
+			// Write word on canvas
+			ctx.clearRect(0,0, canvas2.width, canvas2.height);
+			ctx.fillText(loremipsum[index],0,0+25);
+			
+			// Render the text
+			renderText(verticesTexCoords);
+			count++;
+		}
+	}
+	
+	var end = D.getTime();
+	// *** timer end ***
+	console.log("Time to render (ms): ");
+	console.log(end-start);
+	console.log("texts: ");
+	console.log(vertical*horiz);
+}
+
+// Call this function to ready text rendering
+function setupText(canvas){
   // Get a WebGL context inspired from example on MDN:
   // https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL
   gl = null;
@@ -72,18 +133,20 @@ ctx.fillText("Hello World",10,50);
     console.log('Failed to intialize shaders.');
     return;
   }
+}
 
-  // Set the vertex information
-  var n = initVertexBuffers(gl);
-  if (n < 0) {
-    console.log('Failed to set the vertex information');
-    return;
-  }
-
-  // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-  // Set texture
+// Call this function to render some text.
+// quad is a float 32 array that defines a quadrilateral where the
+// text texture is to be rendered
+function renderText(quad){
+	// update vertices
+	var n = initVertexBuffers(gl, quad);
+	if (n < 0) {
+		console.log('Failed to set the vertex information');
+		return;
+	}
+	
+	// Set texture and render
   if (!initTextures(gl, n)) {
     console.log('Failed to intialize the texture.');
     return;
@@ -169,7 +232,9 @@ function initializeShaders(gl, vshader, fshader){
 	return true;
 }
 
-function initVertexBuffers(gl) {
+function initVertexBuffers(gl, verticesTexCoords) {
+
+/*
   var verticesTexCoords = new Float32Array([
     // Vertex coordinates, texture coordinate
     -0.5,  0.5,   0.0, 1.0,
@@ -177,6 +242,7 @@ function initVertexBuffers(gl) {
      0.5,  0.5,   1.0, 1.0,
      0.5, -0.5,   1.0, 0.0,
   ]);
+ */ 
   var n = 4; // The number of vertices
 
   // Create the buffer object
@@ -226,17 +292,6 @@ function initTextures(gl, n) {
     console.log('Failed to get the storage location of u_Sampler');
     return false;
   }
-  /* Originally used to utilize image as texture
-  var image = new Image();  // Create the image object
-  if (!image) {
-    console.log('Failed to create the image object');
-    return false;
-  }
-  // Register the event handler to be called on loading an image
-  image.onload = function(){ loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2")); };
-  // Tell the browser to load an image
-  image.src = 'sky.jpg';
-  */
   
   loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
   //loadTexture(gl, n, texture, u_Sampler, canvas2);
@@ -260,15 +315,18 @@ function loadTexture(gl, n, texture, u_Sampler, image) {
   // Set the texture unit 0 to the sampler
   gl.uniform1i(u_Sampler, 0);
   
-  gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
+  //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
 
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
 }
 
+
+
+//*******************************************************************************
 // THE FOLLOWING IS UTILITY CODE FROM ORIGINAL PROGRAM THAT WAS REPLACED
-// DONE TO BE DELETED LATER
+// TO BE DELETED LATER
 
-
+// TexturedQuad.js (c) 2012 matsuda and kanda
   
   /* Original code from WebGL Programming Guide by Matsuda and Lea
   // Get the rendering context for WebGL
@@ -288,6 +346,18 @@ function loadTexture(gl, n, texture, u_Sampler, image) {
     console.log('Failed to intialize shaders.');
     return;
   }
+  */
+  
+  /* Originally used to utilize image as texture
+  var image = new Image();  // Create the image object
+  if (!image) {
+    console.log('Failed to create the image object');
+    return false;
+  }
+  // Register the event handler to be called on loading an image
+  image.onload = function(){ loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2")); };
+  // Tell the browser to load an image
+  image.src = 'sky.jpg';
   */
   
 // ***
