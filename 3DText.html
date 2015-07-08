@@ -10,6 +10,7 @@
     Please use a browser that supports "canvas"
     </canvas>
 	<canvas id="canvas2" style="border:1px solid #000000; background:transparent; visibility:hidden;">
+	<div id="fps">Hello</div>
 	</canvas>
 
     <script>
@@ -81,6 +82,7 @@ function main() {
 	var vertical = 60;
 	var horiz = 20;
 	var count = 0;
+	
 	for(i=0; i<vertical; i++){
 		for(j=0; j<horiz; j++){
 			// get a random word
@@ -105,6 +107,7 @@ function main() {
 			count++;
 		}
 	}
+	
 	
 	var end = D.getTime();
 	// *** timer end ***

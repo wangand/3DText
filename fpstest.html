@@ -1,0 +1,200 @@
+ <canvas id="myCanvas" width="512" height="512" style="border:1px solid #000000;">
+</canvas> 
+<div id="fps">
+hello
+</div>
+
+<script>
+
+// HelloPoint1.js (c) 2012 matsuda
+// Vertex shader program
+var VSHADER_SOURCE = 
+  'void main() {\n' +
+  '  gl_Position = vec4(0.5, 0.5, 0.0, 1.0);\n' + // Set the vertex coordinates of the point
+  '  gl_PointSize = 10.0;\n' +                    // Set the point size
+  '}\n';
+
+// Fragment shader program
+var FSHADER_SOURCE =
+  'void main() {\n' +
+  '  gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n' + // Set the point color
+  '}\n';
+  
+  var now, elapsed, then;
+
+function main() {
+  // Retrieve <canvas> element
+  var canvas = document.getElementById('myCanvas');
+
+  // Get the rendering context for WebGL
+  setupText(canvas);
+
+  // Specify the color for clearing <canvas>
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+  animate();
+}
+main();
+
+function animate(){
+	draw();
+	
+	now = Date.now();
+	elapsed = now - then;
+	
+	then = now;
+	
+	document.getElementById("fps").innerHTML = elapsed*1000;
+	
+	requestAnimationFrame(animate);
+}
+
+function draw(){
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  // Draw a point
+  gl.drawArrays(gl.POINTS, 0, 1);
+}
+
+// Call this function to ready text rendering
+function setupText(canvas){
+  // Get a WebGL context inspired from example on MDN:
+  // https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL
+  gl = null;
+  gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    // Make sure we got a context
+  if (!gl) {
+    alert("Failed to initialize WebGL. Please use a WebGL compatible browser.");
+    gl = null;
+    return;
+  }
+
+  // IMPORTANT
+  // This code allows WebGL to do transparencies
+  // Without these lines, a white box will show up
+  // from: http://webglfundamentals.org/webgl/lessons/webgl-text-texture.html
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  
+  // Initialize shaders
+   if (!initializeShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+    console.log('Failed to intialize shaders.');
+    return;
+  }
+}
+
+function initializeShaders(gl, vshader, fshader){
+	// make and verify vertex shader object
+	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	if(vertexShader == null){
+		console.log("Unable to create vertex shader");
+		return false;
+	}
+	
+	// set vertex shader program source and compile
+	gl.shaderSource(vertexShader, vshader);
+	gl.compileShader(vertexShader);
+	
+	// Check result of vertexShader compilation
+	if(!(gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(vertexShader);
+		console.log('Failed to compile vertex shader: ' + errorMsg);
+		gl.deleteShader(vertexShader);
+		return false;
+	}
+	
+	
+	// make and verify fragment shader object
+	var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	if(fragmentShader == null){
+		console.log("Unable to create fragment shader");
+		return false;
+	}
+	
+	// set fragment shader program source and compile
+	gl.shaderSource(fragmentShader, fshader);
+	gl.compileShader(fragmentShader);
+	
+	// Check result of fragmentShader compilation
+	if(!(gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(fragmentShader);
+		console.log('Failed to compile fragment shader: ' + errorMsg);
+		gl.deleteShader(fragmentShader);
+		return false;
+	}
+
+	// Verify both shaders created
+	if(!vertexShader || !fragmentShader){
+		console.log("shaders no load");
+		return false;
+	}
+
+	// make and verify program object
+	var program = gl.createProgram();
+	if(!program){
+		console.log("program no create");
+		return false;
+	}
+
+	// Attach vertex and fragment shader to program object
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+
+	// Link program and verify linkng
+	gl.linkProgram(program);
+	if(!(gl.getProgramParameter(program, gl.LINK_STATUS))){
+		var errorMsg = gl.getProgramInfoLog(program);
+		console.log('Program filed to link: ' + errorMsg);
+		gl.deleteProgram(program);
+		gl.deleteShader(fragmentShader);
+		gl.deleteShader(vertexShader);
+		console.log("no program got");
+		return false;
+	}
+
+	// Use and set the program
+	gl.useProgram(program);
+	gl.program = program;
+	return true;
+}
+
+
+
+/*
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+var then = Date.now();
+var startTime=then;
+var elapsed;
+
+function draw(){
+	max = 10;
+	randX = Math.floor((Math.random()*2-1)*max);
+	randY = Math.floor((Math.random()*2-1)*max);
+	ctx.font = "30px Arial";
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.fillText("Hello World",170+randX,200+randY);
+	ctx.fillText("Hello World",160+randX,210+randY);
+	ctx.fillText("Hello World",130+randX,190+randY);
+	ctx.fillText("Hello World",140+randX,220+randY);
+	ctx.fillText("Hello World",150+randX,180+randY);
+}
+
+function animate(){
+	draw();
+	
+	now = Date.now();
+	elapsed = now - then;
+	
+	then = now;
+	
+	document.getElementById("fps").innerHTML = elapsed*1000;
+	
+	requestAnimationFrame(animate);
+}
+
+animate();
+*/
+</script>
