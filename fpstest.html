@@ -3,25 +3,346 @@
 <div id="fps">
 hello
 </div>
+ <select id="selection">
+  <option value="lines">lines</option>
+  <option value="line_strip">line strip</option>
+  <option value="line_loop">line loop</option>
+  <option value="triangles" selected="selected">triangles</option>
+	<option value="triangle_strip">triangle strip</option>
+	<option value="triangle_fan">triangle fan</option>
+</select> 
 
 <script>
 
+var g_points = []; // The array for the position of a mouse press
+var n = 0;
+
 // HelloPoint1.js (c) 2012 matsuda
 // Vertex shader program
-var VSHADER_SOURCE = 
+var VSHADER_SOURCE =
+  'attribute vec4 a_Position;\n' +
   'void main() {\n' +
-  '  gl_Position = vec4(0.5, 0.5, 0.0, 1.0);\n' + // Set the vertex coordinates of the point
-  '  gl_PointSize = 10.0;\n' +                    // Set the point size
+  '  gl_Position = a_Position;\n' +
+  //'  gl_PointSize = 10.0;\n' +
   '}\n';
 
 // Fragment shader program
 var FSHADER_SOURCE =
   'void main() {\n' +
-  '  gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n' + // Set the point color
+  '  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n' +
   '}\n';
   
   var now, elapsed, then;
+ 
+/* 
+function main() {
+  // Retrieve <canvas> element
+  var canvas = document.getElementById('myCanvas');
 
+  // Get the rendering context for WebGL
+  setupText(canvas);
+ // // Get the storage location of a_Position
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  if (a_Position < 0) {
+    console.log('Failed to get the storage location of a_Position');
+    return;
+  }
+
+  // Register function (event handler) to be called on a mouse press
+  canvas.onmousedown = function(ev){ click(ev, gl, canvas, a_Position); };
+
+  // Specify the color for clearing <canvas>
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  
+    animate(gl, a_Position);
+  
+}
+*/
+function main() {
+  // Retrieve <canvas> element
+  var canvas = document.getElementById('myCanvas');
+  
+  // setup event handler
+  canvas.onclick = (function(ev){click(ev,gl,canvas)});
+  
+  // setup shader programs 
+  setupText(canvas);
+
+  // Specify the color for clearing <canvas>
+  gl.clearColor(0, 0, 0, 1);
+
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  // Draw three points
+  //gl.drawArrays(gl.POINTS, 0, n);
+  //draw(gl);
+  animate(gl,n);
+}
+
+function click(ev, gl, canvas) {
+  var x = ev.clientX; // x coordinate of a mouse pointer
+  var y = ev.clientY; // y coordinate of a mouse pointer
+  var rect = ev.target.getBoundingClientRect() ;
+
+  x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
+  y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
+  // Store the coordinates to g_points array
+  g_points.push(x); g_points.push(y);
+
+  n = g_points.length/2;
+  //document.getElementById("fps").innerHTML = n;
+  //draw(gl, a_Position);
+  initVertexBuffers(gl);
+}
+
+function draw(gl){
+
+  var selection = document.getElementById("selection").value;
+  //var choice = selection.options[selection.selctedIndex].text;
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  
+  switch(selection){
+	case "lines":
+		gl.drawArrays(gl.LINES, 0, n);
+		break;
+	case "line_strip":
+	gl.drawArrays(gl.LINE_STRIP, 0, n);
+		break;
+	case "line_loop":
+		gl.drawArrays(gl.LINE_LOOP, 0, n);
+		break;
+	case "triangles":
+		gl.drawArrays(gl.TRIANGLES, 0, n);
+		break;
+	case "triangle_strip":
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
+		break;
+	case "triangle_fan":
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, n);
+		break;
+  }
+  //gl.drawArrays(gl.TRIANGLES, 0, n);
+}
+
+function initVertexBuffers(gl) {
+//  var vertices = new Float32Array([
+//    0.0, 0.5,   -0.5, -0.5,   0.5, -0.5
+//  ]);
+//  var n = 3; // The number of vertices
+  
+  var vertices = new Float32Array(g_points.length);
+
+  // fill the vertices
+  for(var i=0; i<g_points.length; i++){
+	vertices[i] = g_points[i];
+  }
+  
+  // Create a buffer object
+  var vertexBuffer = gl.createBuffer();
+  if (!vertexBuffer) {
+    console.log('Failed to create the buffer object');
+    return -1;
+  }
+
+  // Bind the buffer object to target
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  // Write date into the buffer object
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  if (a_Position < 0) {
+    console.log('Failed to get the storage location of a_Position');
+    return -1;
+  }
+  // Assign the buffer object to a_Position variable
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+
+  // Enable the assignment to a_Position variable
+  gl.enableVertexAttribArray(a_Position);
+  
+  //animate(gl);
+
+  return n;
+}
+
+function animate(gl){
+	draw(gl);
+	
+	now = Date.now();
+	elapsed = now - then;
+	
+	then = now;
+	
+	document.getElementById("fps").innerHTML = elapsed*1000;
+	
+	requestAnimationFrame(function(){animate(gl)});
+}
+
+/*
+function initVertexBuffers(gl) {
+  var vertices = new Float32Array([
+    0.0, 0.5,   -0.5, -0.5,   0.5, -0.5
+  ]);
+  var n = 3; // The number of vertices
+
+  // Create a buffer object
+  var vertexBuffer = gl.createBuffer();
+  if (!vertexBuffer) {
+    console.log('Failed to create the buffer object');
+    return -1;
+  }
+
+  // Bind the buffer object to target
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  // Write date into the buffer object
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  if (a_Position < 0) {
+    console.log('Failed to get the storage location of a_Position');
+    return -1;
+  }
+  // Assign the buffer object to a_Position variable
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+
+  // Enable the assignment to a_Position variable
+  gl.enableVertexAttribArray(a_Position);
+
+  return n;
+}*/
+
+main();
+
+
+
+/*
+function draw(gl, a_Position){
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  var len = g_points.length;
+  for(var i = 0; i < len; i += 2) {
+    // Pass the position of a point to a_Position variable
+    gl.vertexAttrib3f(a_Position, g_points[i], g_points[i+1], 0.0);
+
+    // Draw
+    gl.drawArrays(gl.POINTS, 0, 1);
+  }
+}
+*/
+
+
+
+
+
+// Call this function to ready text rendering
+function setupText(canvas){
+  // Get a WebGL context inspired from example on MDN:
+  // https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL
+  gl = null;
+  gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    // Make sure we got a context
+  if (!gl) {
+    alert("Failed to initialize WebGL. Please use a WebGL compatible browser.");
+    gl = null;
+    return;
+  }
+
+  // IMPORTANT
+  // This code allows WebGL to do transparencies
+  // Without these lines, a white box will show up
+  // from: http://webglfundamentals.org/webgl/lessons/webgl-text-texture.html
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  
+  // Initialize shaders
+   if (!initializeShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+    console.log('Failed to intialize shaders.');
+    return;
+  }
+}
+
+function initializeShaders(gl, vshader, fshader){
+	// make and verify vertex shader object
+	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	if(vertexShader == null){
+		console.log("Unable to create vertex shader");
+		return false;
+	}
+	
+	// set vertex shader program source and compile
+	gl.shaderSource(vertexShader, vshader);
+	gl.compileShader(vertexShader);
+	
+	// Check result of vertexShader compilation
+	if(!(gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(vertexShader);
+		console.log('Failed to compile vertex shader: ' + errorMsg);
+		gl.deleteShader(vertexShader);
+		return false;
+	}
+	
+	
+	// make and verify fragment shader object
+	var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	if(fragmentShader == null){
+		console.log("Unable to create fragment shader");
+		return false;
+	}
+	
+	// set fragment shader program source and compile
+	gl.shaderSource(fragmentShader, fshader);
+	gl.compileShader(fragmentShader);
+	
+	// Check result of fragmentShader compilation
+	if(!(gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(fragmentShader);
+		console.log('Failed to compile fragment shader: ' + errorMsg);
+		gl.deleteShader(fragmentShader);
+		return false;
+	}
+
+	// Verify both shaders created
+	if(!vertexShader || !fragmentShader){
+		console.log("shaders no load");
+		return false;
+	}
+
+	// make and verify program object
+	var program = gl.createProgram();
+	if(!program){
+		console.log("program no create");
+		return false;
+	}
+
+	// Attach vertex and fragment shader to program object
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+
+	// Link program and verify linkng
+	gl.linkProgram(program);
+	if(!(gl.getProgramParameter(program, gl.LINK_STATUS))){
+		var errorMsg = gl.getProgramInfoLog(program);
+		console.log('Program filed to link: ' + errorMsg);
+		gl.deleteProgram(program);
+		gl.deleteShader(fragmentShader);
+		gl.deleteShader(vertexShader);
+		console.log("no program got");
+		return false;
+	}
+
+	// Use and set the program
+	gl.useProgram(program);
+	gl.program = program;
+	return true;
+}
+  
+/*
 function main() {
   // Retrieve <canvas> element
   var canvas = document.getElementById('myCanvas');
