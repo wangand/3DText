@@ -6,16 +6,17 @@
   </head>
 
   <body onload="main()">
-    <canvas id="webgl" width="512" height="512" style="border:1px solid #000000;">
+    <canvas id="webgl" width="1024" height="512" style="border:1px solid #000000;">
     Please use a browser that supports "canvas"
     </canvas>
 	<canvas id="canvas2" style="border:1px solid #000000; background:transparent; visibility:hidden;">
-	<div id="fps">Hello</div>
 	</canvas>
+		<div id="fps">Hello</div>
 	
 	<script>
 	// The translation distance for x, y, and z direction
-var Tx = 0.01, Ty = -0.01, Tz = 0.0;
+var Tx = 0.0, Ty = 0.0, Tz = 0.0;
+var now, elapsed, then;
 	
 // Shader programs from code from matsuda and kanda 2012
 // Found in WebGL Programming Guide
@@ -65,10 +66,12 @@ function main() {
 	ctx.font = "20px Times New Roman";
 	ctx.fillStyle = "white";
 
-
 	// Retrieve <canvas> element and ready page for rext rendering
 	var canvas = document.getElementById('webgl');
 	setupText(canvas);
+
+	// setup event handler
+	canvas.onmousedown = (function(ev){click(ev,gl,canvas)});
 
 	// Color for clearing the WebGL canvas
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -83,24 +86,59 @@ function main() {
 	var horiz = 20;
 	var count = 0;
 	
+	animate(gl);
+}
 
-			// Ready the quadrilateral
-			// The text will render in quadrilateral
-			var verticesTexCoords = new Float32Array([
-			// Vertex coordinates, texture coordinate
-				-1.0,  1.0,   0.0, 1.0,
-				-1.0,  0.4,   0.0, 0.0,
-				-0.4,  1.0,   1.0, 1.0,
-				-0.4,  0.4,   1.0, 0.0,
-			]);
+function draw(gl){
+		len = 0.9; // lenght of side of square
+		// Ready the quadrilateral
+		// The text will render in quadrilateral
+		var verticesTexCoords = new Float32Array([
+		// Vertex coordinates, texture coordinate
+			0.0,  0.0,   0.0, 1.0,
+			0.0,  0.0-len,   0.0, 0.0,
+			0.0+len,  0.0,   1.0, 1.0,
+			0.0+len,  0.4,   1.0, 0.0,
+		]);
 
 			// Write word on canvas
+			var canvas2 = document.getElementById("canvas2");
+			var ctx = canvas2.getContext("2d");
 			ctx.clearRect(0,0, canvas2.width, canvas2.height);
 			ctx.fillText("Hello World",0,0+25);
 			
+			
+			gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
 			// Render the text
 			renderText(verticesTexCoords);
+}
 
+function animate(gl){
+	draw(gl);
+	
+	now = Date.now();
+	elapsed = now - then;
+	
+	then = now;
+	
+	document.getElementById("fps").innerHTML = 1000/elapsed;
+	
+	Tx += (Math.random()*2 -1)/100;
+	Ty += (Math.random()*2 -1)/100;
+	
+	requestAnimationFrame(function(){animate(gl)});
+}
+
+function click(ev, gl, canvas) {
+  Tx = ev.clientX; // x coordinate of a mouse pointer
+  Ty = ev.clientY; // y coordinate of a mouse pointer
+  var rect = ev.target.getBoundingClientRect() ;
+
+  Tx = ((Tx - rect.left) - canvas.width/2)/(canvas.width/2);
+  Ty = (canvas.height/2 - (Ty - rect.top))/(canvas.height/2);
+
+	//draw(gl);
+  
 }
 
 // Call this function to ready text rendering
