@@ -10,21 +10,31 @@ hello
   <option value="triangles" selected="selected">triangles</option>
 	<option value="triangle_strip">triangle strip</option>
 	<option value="triangle_fan">triangle fan</option>
-</select> 
+</select>
+<input id="slider1" type="range" min="-1" max="1" step=".01" onchange="xslider()" />  
 
 <script>
 
 var g_points = []; // The array for the position of a mouse press
 var n = 0;
+// The translation distance for x, y, and z direction
+var Tx = 0.0, Ty = 0.0, Tz = 0.0;
 
 // HelloPoint1.js (c) 2012 matsuda
 // Vertex shader program
 var VSHADER_SOURCE =
   'attribute vec4 a_Position;\n' +
+  'uniform vec4 u_Translation;\n' +
+  'void main() {\n' +
+  '  gl_Position = a_Position + u_Translation;\n' +
+  '}\n';
+/*
+  'attribute vec4 a_Position;\n' +
   'void main() {\n' +
   '  gl_Position = a_Position;\n' +
   //'  gl_PointSize = 10.0;\n' +
   '}\n';
+  */
 
 // Fragment shader program
 var FSHADER_SOURCE =
@@ -106,6 +116,14 @@ function draw(gl){
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
   
+      // Pass the translation distance to the vertex shader
+  var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
+  if (!u_Translation) {
+    console.log('Failed to get the storage location of u_Translation');
+    return;
+  }
+  gl.uniform4f(u_Translation, Tx, Ty, Tz, 0.0);
+  
   switch(selection){
 	case "lines":
 		gl.drawArrays(gl.LINES, 0, n);
@@ -161,6 +179,8 @@ function initVertexBuffers(gl) {
   }
   // Assign the buffer object to a_Position variable
   gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+  
+
 
   // Enable the assignment to a_Position variable
   gl.enableVertexAttribArray(a_Position);
@@ -181,6 +201,11 @@ function animate(gl){
 	document.getElementById("fps").innerHTML = elapsed*1000;
 	
 	requestAnimationFrame(function(){animate(gl)});
+}
+
+function xslider(){
+	slider = document.getElementById("slider1");
+	Tx = slider.value;
 }
 
 /*
