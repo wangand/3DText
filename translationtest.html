@@ -17,6 +17,8 @@
 	// The translation distance for x, y, and z direction
 var Tx = 0.0, Ty = 0.0, Tz = 0.0;
 var now, elapsed, then;
+
+var words = [];
 	
 // Shader programs from code from matsuda and kanda 2012
 // Found in WebGL Programming Guide
@@ -63,7 +65,7 @@ function main() {
 		canvas2.height = canvasHeight;
 	}
 	var ctx = canvas2.getContext("2d");
-	ctx.font = "20px Times New Roman";
+	ctx.font = "40px Times New Roman";
 	ctx.fillStyle = "white";
 
 	// Retrieve <canvas> element and ready page for rext rendering
@@ -82,14 +84,30 @@ function main() {
 	var aspectRatio = canvas.width / canvas.height;
 	ctx.scale(1/aspectRatio,1);
 
-	var vertical = 60;
-	var horiz = 20;
-	var count = 0;
+	// Draw the first word
+	// get a random word
+	index = Math.floor(Math.random()*loremipsum.length);
+	words.push([loremipsum[index],0.0,0.0]);
 	
+
 	animate(gl);
 }
 
 function draw(gl){
+gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
+	for(i=0; i<words.length; i++){
+	
+	Tx = words[i][1];
+	Ty = words[i][2];
+	
+	    // Pass the translation distance to the vertex shader
+  var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
+  if (!u_Translation) {
+    console.log('Failed to get the storage location of u_Translation');
+    return;
+  }
+  gl.uniform4f(u_Translation, Tx, Ty, Tz, 0.0);
+	
 		len = 0.9; // lenght of side of square
 		// Ready the quadrilateral
 		// The text will render in quadrilateral
@@ -105,12 +123,13 @@ function draw(gl){
 			var canvas2 = document.getElementById("canvas2");
 			var ctx = canvas2.getContext("2d");
 			ctx.clearRect(0,0, canvas2.width, canvas2.height);
-			ctx.fillText("Hello World",0,0+25);
+			ctx.fillText(words[i][0],0,0+25);
 			
 			
-			gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
+			
 			// Render the text
 			renderText(verticesTexCoords);
+	}
 }
 
 function animate(gl){
@@ -123,20 +142,31 @@ function animate(gl){
 	
 	document.getElementById("fps").innerHTML = 1000/elapsed;
 	
-	Tx += (Math.random()*2 -1)/100;
-	Ty += (Math.random()*2 -1)/100;
+	// animate
+	for(i=0;i<words.length;i++){
+		words[i][1] += (Math.random()*2 -1)/100;
+		words[i][2] += (Math.random()*2 -1)/100;
+		//Tx += (Math.random()*2 -1)/100;
+		//Ty += (Math.random()*2 -1)/100;
+	}
 	
 	requestAnimationFrame(function(){animate(gl)});
 }
 
 function click(ev, gl, canvas) {
-  Tx = ev.clientX; // x coordinate of a mouse pointer
-  Ty = ev.clientY; // y coordinate of a mouse pointer
+  var x = ev.clientX; // x coordinate of a mouse pointer
+  var y = ev.clientY; // y coordinate of a mouse pointer
   var rect = ev.target.getBoundingClientRect() ;
 
-  Tx = ((Tx - rect.left) - canvas.width/2)/(canvas.width/2);
-  Ty = (canvas.height/2 - (Ty - rect.top))/(canvas.height/2);
+  x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
+  y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
 
+  // Assign to the thing that is to move
+  //Tx = x;
+  //Ty = y;
+  var newWord = loremipsum[Math.floor(Math.random()*loremipsum.length)];
+  words.push([newWord, x, y]);
+  
 	//draw(gl);
   
 }
@@ -267,15 +297,6 @@ function initializeShaders(gl, vshader, fshader){
 
 function initVertexBuffers(gl, verticesTexCoords) {
 
-/*
-  var verticesTexCoords = new Float32Array([
-    // Vertex coordinates, texture coordinate
-    -0.5,  0.5,   0.0, 1.0,
-    -0.5, -0.5,   0.0, 0.0,
-     0.5,  0.5,   1.0, 1.0,
-     0.5, -0.5,   1.0, 0.0,
-  ]);
- */ 
   var n = 4; // The number of vertices
 
   // Create the buffer object
@@ -299,13 +320,7 @@ function initVertexBuffers(gl, verticesTexCoords) {
   gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
   gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
   
-    // Pass the translation distance to the vertex shader
-  var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
-  if (!u_Translation) {
-    console.log('Failed to get the storage location of u_Translation');
-    return;
-  }
-  gl.uniform4f(u_Translation, Tx, Ty, Tz, 0.0);
+
 
   // Get the storage location of a_TexCoord
   var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
