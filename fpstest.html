@@ -11,30 +11,117 @@ hello
 	<option value="triangle_strip">triangle strip</option>
 	<option value="triangle_fan">triangle fan</option>
 </select>
-<input id="slider1" type="range" min="-1" max="1" step=".01" onchange="xslider()" />  
+<input id="slider1" type="range" min="-1" max="1" step=".01" oninput="xslider()" />
+<input id="slider2" type="range" min="-1" max="1" step=".01" oninput="yslider()" />
+<input id="slider3" type="range" min="-360" max="360" step="1" oninput="angleslider()" />
+<input id="slider4" type="range" min="-10" max="10" step="0.1" oninput="scaleslider()" />
 
 <script>
 
+// I don't know why but the matrix transformation support class must be put at the top to work
+// Andrew's Matrix transformation support class
+var TransformMatrix = function(){
+  this.tempArray; // used for matrix multiplications
+  this.floatArray; // used to pass values to webgl
+};
+
+TransformMatrix.prototype.CreateTranslation = function(Tx, Ty, Tz){
+	this.tempArray = [
+      1.0,  0.0, 0.0, 0.0,
+      0.0,  1.0, 0.0, 0.0,
+      0.0,  0.0, 1.0, 0.0,
+      Tx,  Ty, Tz, 1.0
+	];
+	this.floatArray = new Float32Array(this.tempArray);
+};
+
+TransformMatrix.prototype.Create2DRotation = function(angle){
+	// convert to radians
+	var radians = angle * (Math.PI/180);
+	var cosb = Math.cos(radians);
+	var sinb = Math.sin(radians);
+
+// Just for future reference if necessary
+	// Formula for 2D rotation about z axis
+	// Trigonometric addition formulas
+	// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
+	// sin(a+b) = sin(a)cos(b) + sin(b)cos(a)
+	// l = length of vector
+	// a = original angle
+	// b = new angle
+	// x = l*cos(a)       from observation (draw a chart)
+	// y = l*sin(a)       from observation
+	// x' = l*cos(a+b)    from observation
+	// y' = l*sin(a+b)    from observation
+	// x':
+	// x' = l*(cos(a)cos(b) - sin(a)sin(b))    addition formula
+	// x' = l*cos(a)cos(b) - l*sin(a)sin(b)    distributive property
+	// x' = x*cos(b) - y*sin(b)                  substitute x and y
+	// now x' is only in terms of the new angle
+	// y':
+	// y' = l*(sin(a)cos(b) + sin(b)cos(a))    addition formula
+	// y' = l*sin(a)cos(b) + l*sin(b)cos(a)    distributive property
+	// y' = l*sin(a)cos(b) + l*cos(a)sin(b)    commutative property
+	// y' = y*cos(b) + x*sin(b)                  substitute x and y
+	// now y' is only in terms of the new angle
+	// Thus:
+	// x' = x*cos(b) - y*sin(b) 
+	// y' = y*cos(b) + x*sin(b)
+	// z' = z (2D rotation)
+
+	// Formula for 2D rotation about z axis in matrix form
+	// x' = |cosb -sinb  0.0  0.0|   x
+	// y' = |sinb  cosb  0.0  0.0| * y 
+	// z' = |0.0   0.0   1.0  0.0|   z
+	// w' = |0.0   0.0   0.0  1.0|   w
+
+	// Column major form
+	// cosb  sinb  0.0  0.0
+	// -sinb cosb  0.0  0.0
+	// 0.0   0.0   1.0  0.0
+	// 0.0   0.0   0.0  1.0
+
+	this.tempArray = [
+      cosb,   sinb, 0.0, 0.0,
+      -sinb,  cosb, 0.0, 0.0,
+      0.0,    0.0,  1.0, 0.0,
+      0.0,    0.0,  0.0, 1.0
+	];
+	this.floatArray = new Float32Array(this.tempArray);
+};
+
+TransformMatrix.prototype.CreateScale = function(Sx, Sy, Sz){
+	this.tempArray = [
+      Sx,   0.0, 0.0, 0.0,
+      0.0,  Sy,  0.0, 0.0,
+      0.0,  0.0, Sz,  0.0,
+      0.0,  0.0, 0.0, 1.0
+  ];
+	this.floatArray = new Float32Array(this.tempArray);
+};
+
 var g_points = []; // The array for the position of a mouse press
 var n = 0;
+
+// All the transformation variables
 // The translation distance for x, y, and z direction
 var Tx = 0.0, Ty = 0.0, Tz = 0.0;
+// The rotation angle for 2D rotation counter-clockwise (right hand rule) along z axis in degrees (not radians)
+var angle = 0.0;
+// Scaling variables
+var Sx = 1.0, Sy = 1.0, Sz = 1.0;
+
+// Matrix transformation class
+var transformation = new TransformMatrix();
 
 // HelloPoint1.js (c) 2012 matsuda
 // Vertex shader program
 var VSHADER_SOURCE =
   'attribute vec4 a_Position;\n' +
-  'uniform vec4 u_Translation;\n' +
+  'uniform mat4 u_xformMatrix;\n' +
   'void main() {\n' +
-  '  gl_Position = a_Position + u_Translation;\n' +
+  '  gl_Position = u_xformMatrix * a_Position;\n' +
   '}\n';
-/*
-  'attribute vec4 a_Position;\n' +
-  'void main() {\n' +
-  '  gl_Position = a_Position;\n' +
-  //'  gl_PointSize = 10.0;\n' +
-  '}\n';
-  */
 
 // Fragment shader program
 var FSHADER_SOURCE =
@@ -44,33 +131,6 @@ var FSHADER_SOURCE =
   
   var now, elapsed, then;
  
-/* 
-function main() {
-  // Retrieve <canvas> element
-  var canvas = document.getElementById('myCanvas');
-
-  // Get the rendering context for WebGL
-  setupText(canvas);
- // // Get the storage location of a_Position
-  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-  if (a_Position < 0) {
-    console.log('Failed to get the storage location of a_Position');
-    return;
-  }
-
-  // Register function (event handler) to be called on a mouse press
-  canvas.onmousedown = function(ev){ click(ev, gl, canvas, a_Position); };
-
-  // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-  // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  
-    animate(gl, a_Position);
-  
-}
-*/
 function main() {
   // Retrieve <canvas> element
   var canvas = document.getElementById('myCanvas');
@@ -111,18 +171,38 @@ function click(ev, gl, canvas) {
 
 function draw(gl){
 
+  // Get selection for type of rendering of the vertices
   var selection = document.getElementById("selection").value;
-  //var choice = selection.options[selection.selctedIndex].text;
+  
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
   
-      // Pass the translation distance to the vertex shader
+  // Use the global transformation object to do a transformation
+  // First transform (SET)
+  //transformation.CreateTranslation(Tx,Ty,Tz);
+  //transformation.Create2DRotation(angle);
+  transformation.CreateScale(Sx,Sy,Sz);
+  // Second transform (MULT)
+  // Third transform (MULT)
+
+  // Pass the transformation matrix to the vertex shader via Uniform Variable
+  var u_xformMatrix = gl.getUniformLocation(gl.program, 'u_xformMatrix');
+  if (!u_xformMatrix) {
+    console.log('Failed to get the storage location of u_xformMatrix');
+    return;
+  }
+  //gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix);
+  gl.uniformMatrix4fv(u_xformMatrix, false, transformation.floatArray);
+  
+  /*
+  // Pass the translation distance to the vertex shader
   var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
   if (!u_Translation) {
     console.log('Failed to get the storage location of u_Translation');
     return;
   }
   gl.uniform4f(u_Translation, Tx, Ty, Tz, 0.0);
+  */
   
   switch(selection){
 	case "lines":
@@ -179,8 +259,6 @@ function initVertexBuffers(gl) {
   }
   // Assign the buffer object to a_Position variable
   gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
-  
-
 
   // Enable the assignment to a_Position variable
   gl.enableVertexAttribArray(a_Position);
@@ -198,7 +276,7 @@ function animate(gl){
 	
 	then = now;
 	
-	document.getElementById("fps").innerHTML = elapsed*1000;
+	document.getElementById("fps").innerHTML = 1000/elapsed;
 	
 	requestAnimationFrame(function(){animate(gl)});
 }
@@ -208,60 +286,24 @@ function xslider(){
 	Tx = slider.value;
 }
 
-/*
-function initVertexBuffers(gl) {
-  var vertices = new Float32Array([
-    0.0, 0.5,   -0.5, -0.5,   0.5, -0.5
-  ]);
-  var n = 3; // The number of vertices
+function yslider(){
+	slider = document.getElementById("slider2");
+	Ty = slider.value;
+}
 
-  // Create a buffer object
-  var vertexBuffer = gl.createBuffer();
-  if (!vertexBuffer) {
-    console.log('Failed to create the buffer object');
-    return -1;
-  }
+function angleslider(){
+	slider = document.getElementById("slider3");
+	angle = slider.value;
+}
 
-  // Bind the buffer object to target
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  // Write date into the buffer object
-  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+function scaleslider(){
+	slider = document.getElementById("slider4");
+	Sx = slider.value;
+}
 
-  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
-  if (a_Position < 0) {
-    console.log('Failed to get the storage location of a_Position');
-    return -1;
-  }
-  // Assign the buffer object to a_Position variable
-  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
 
-  // Enable the assignment to a_Position variable
-  gl.enableVertexAttribArray(a_Position);
-
-  return n;
-}*/
 
 main();
-
-
-
-/*
-function draw(gl, a_Position){
-  // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  var len = g_points.length;
-  for(var i = 0; i < len; i += 2) {
-    // Pass the position of a point to a_Position variable
-    gl.vertexAttrib3f(a_Position, g_points[i], g_points[i+1], 0.0);
-
-    // Draw
-    gl.drawArrays(gl.POINTS, 0, 1);
-  }
-}
-*/
-
-
 
 
 
@@ -366,7 +408,9 @@ function initializeShaders(gl, vshader, fshader){
 	gl.program = program;
 	return true;
 }
-  
+
+
+
 /*
 function main() {
   // Retrieve <canvas> element
