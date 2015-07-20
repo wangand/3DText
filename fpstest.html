@@ -11,10 +11,25 @@ hello
 	<option value="triangle_strip">triangle strip</option>
 	<option value="triangle_fan">triangle fan</option>
 </select>
-<input id="slider1" type="range" min="-1" max="1" step=".01" oninput="xslider()" />
-<input id="slider2" type="range" min="-1" max="1" step=".01" oninput="yslider()" />
-<input id="slider3" type="range" min="-360" max="360" step="1" oninput="angleslider()" />
-<input id="slider4" type="range" min="-10" max="10" step="0.1" oninput="scaleslider()" />
+<input id="slider1" type="range" min="-1" max="1" step=".01" oninput="xslider()" />X
+<input id="slider2" type="range" min="-1" max="1" step=".01" oninput="yslider()" />Y
+<input id="slider3" type="range" min="-360" max="360" step="1" oninput="angleslider()" />angle
+<input id="slider4" type="range" min="-10" max="10" step="0.1" oninput="scaleslider()" />XScale
+<br/>
+<form>
+	<input type="radio" name="order" id="TRS" value="TRS" checked>Translate * Rotate * Scale
+	<br/>
+	<input type="radio" name="order" id="TSR" value="TSR" >Translate * Scale * Rotate
+	<br/>
+	<input type="radio" name="order" id="RTS" value="RTS" >Rotate * Translate * Scale
+	<br/>
+	<input type="radio" name="order" id="RST" value="RST" >Rotate * Scale * Translate
+	<br/>
+	<input type="radio" name="order" id="STR" value="STR" >Scale * Translate * Rotate
+	<br/>
+	<input type="radio" name="order" id="SRT" value="SRT" >Scale * Rotate * Translate
+</form>
+<input type="button" value="Reset Transformations" onclick="reset()">
 
 <script>
 
@@ -24,6 +39,42 @@ var TransformMatrix = function(){
   this.tempArray; // used for matrix multiplications
   this.floatArray; // used to pass values to webgl
 };
+
+// Returns a JS array that is column major form of A*B
+// Requires two JS arrays of 4x4 arrays in column major form
+TransformMatrix.prototype.MatrixMultiply = function(A, B){
+	if(A.length !== 16 || B.length!== 16){
+		console.log("Fatal error in matrix multiplication");
+		return;
+	}
+	
+	var a1,b1,c1,d1,a2,b2,c2,d2; // current rows/columns for inner product
+	var temp; // value after each inner product
+	var result = []; // stores the result as a 1D js array of length 16
+
+	for(i=0; i<16; i++){
+		// Matrix A is columns 4 per row
+		a1 = i%4;
+		b1 = a1+4;
+		c1 = b1+4;
+		d1 = c1+4;
+		
+		// Matrix B is rows same per 4 columns
+		a2 = Math.floor(i/4)*4;
+		b2 = a2+1;
+		c2 = b2+1;
+		d2 = c2+1;
+		//console.log(a1+" "+b1+" "+c1+" "+d1);
+		//console.log(a2+" "+b2+" "+c2+" "+d2);
+		
+		//a1a2+b1b2+c1c2+d1d2 is inner product
+		temp = A[a1]*B[a2]+A[b1]*B[b2]+A[c1]*B[c2]+A[d1]*B[d2];
+		
+		result.push(temp);
+	}
+
+	return result;
+}
 
 TransformMatrix.prototype.CreateTranslation = function(Tx, Ty, Tz){
 	this.tempArray = [
@@ -100,8 +151,52 @@ TransformMatrix.prototype.CreateScale = function(Sx, Sy, Sz){
 	this.floatArray = new Float32Array(this.tempArray);
 };
 
+TransformMatrix.prototype.Mult2DRotation = function(angle){
+	// convert to radians
+	var radians = angle * (Math.PI/180);
+	var cosb = Math.cos(radians);
+	var sinb = Math.sin(radians);
+
+	// Ready multiplication
+	var multArray = [
+      cosb,   sinb, 0.0, 0.0,
+      -sinb,  cosb, 0.0, 0.0,
+      0.0,    0.0,  1.0, 0.0,
+      0.0,    0.0,  0.0, 1.0
+	];
+
+	this.tempArray = this.MatrixMultiply(this.tempArray, multArray);
+	this.floatArray = new Float32Array(this.tempArray);
+}
+
+TransformMatrix.prototype.MultTranslation = function(Tx, Ty, Tz){
+	var multArray = [
+      1.0,  0.0, 0.0, 0.0,
+      0.0,  1.0, 0.0, 0.0,
+      0.0,  0.0, 1.0, 0.0,
+      Tx,  Ty, Tz, 1.0
+	];
+
+	this.tempArray = this.MatrixMultiply(this.tempArray, multArray);
+	this.floatArray = new Float32Array(this.tempArray);
+};
+
+TransformMatrix.prototype.MultScale = function(Sx, Sy, Sz){
+	var multArray = [
+      Sx,   0.0, 0.0, 0.0,
+      0.0,  Sy,  0.0, 0.0,
+      0.0,  0.0, Sz,  0.0,
+      0.0,  0.0, 0.0, 1.0
+  ];
+
+	this.tempArray = this.MatrixMultiply(this.tempArray, multArray);
+	this.floatArray = new Float32Array(this.tempArray);
+};
+
+
+// Global variables ------------------------------------------------------
 var g_points = []; // The array for the position of a mouse press
-var n = 0;
+var n = 0; // number of vertices
 
 // All the transformation variables
 // The translation distance for x, y, and z direction
@@ -129,9 +224,36 @@ var FSHADER_SOURCE =
   '  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n' +
   '}\n';
   
-  var now, elapsed, then;
+// For FPS calculation
+var now, elapsed, then;
+  
+// End Global variables --------------------------------------------
  
 function main() {
+
+/*
+  var testarray = [
+      1.0,  5.0,  9.0,  13.0,
+      2.0,  6.0,  10.0, 14.0,
+      3.0,  7.0,  11.0, 15.0,
+      4.0,  8.0,  12.0, 16.0
+  ];
+    var testarray = [
+      1.0,  2.0,  3.0,  4.0,
+      5.0,  6.0,  7.0, 8.0,
+      9.0,  10.0,  11.0, 12.0,
+      13.0,  14.0,  15.0, 16.0
+  ];
+  var identarray = [
+      1.0,   0.0, 0.0, 0.0,
+      0.0,  1.0,  0.0, 0.0,
+      0.0,  0.0, 1.0,  0.0,
+      0.0,  0.0, 0.0, 1.0
+  ];
+  console.log(transformation.MatrixMultiply(identarray, testarray));
+  //console.log(transformation.MatrixMultiply(testarray, identarray));
+  */
+
   // Retrieve <canvas> element
   var canvas = document.getElementById('myCanvas');
   
@@ -147,9 +269,7 @@ function main() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // Draw three points
-  //gl.drawArrays(gl.POINTS, 0, n);
-  //draw(gl);
+  // Draw the vertices
   animate(gl,n);
 }
 
@@ -173,17 +293,65 @@ function draw(gl){
 
   // Get selection for type of rendering of the vertices
   var selection = document.getElementById("selection").value;
+  // Get selection order of transformations
+  var orders = document.getElementsByName("order");
+  var order; // will store the value of the order
+  // radio button accession from this stackoverflow answer:
+  //http://stackoverflow.com/questions/9561625/checking-value-of-radio-button-group-via-javascript
+  for(i=0; i< orders.length; i++){
+	if(orders[i].checked===true){
+		order = orders[i].value;
+	}
+  }
   
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
   
   // Use the global transformation object to do a transformation
+  // First transform (CREATE)
+  if(order === "TRS" || order === "TSR"){
+	transformation.CreateTranslation(Tx,Ty,Tz);
+  }
+  else if(order === "RTS" || order === "RST"){
+	transformation.Create2DRotation(angle);
+  }
+  else{ //STR || SRT
+	transformation.CreateScale(Sx,Sy,Sz);
+  }
+  // Second transform (MULT)
+  if(order === "RTS" || order === "STR"){
+	transformation.MultTranslation(Tx,Ty,Tz);
+  }
+  else if(order === "TRS" || order === "SRT"){
+	transformation.Mult2DRotation(angle);
+  }
+  else{ //TSR || RST
+	transformation.MultScale(Sx,Sy,Sz);
+  }
+  // Third transform (MULT)
+  if(order === "SRT" || order === "RST"){
+	transformation.MultTranslation(Tx,Ty,Tz);
+  }
+  else if(order === "TSR" || order === "STR"){
+	transformation.Mult2DRotation(angle);
+  }
+  else{ //TRS || RTS
+	transformation.MultScale(Sx,Sy,Sz);
+  }
+  
+  
   // First transform (SET)
   //transformation.CreateTranslation(Tx,Ty,Tz);
   //transformation.Create2DRotation(angle);
-  transformation.CreateScale(Sx,Sy,Sz);
+  //transformation.CreateScale(Sx,Sy,Sz);
   // Second transform (MULT)
+  //transformation.Mult2DRotation(angle);
+  //transformation.MultTranslation(Tx,Ty,Tz);
+  //transformation.MultScale(Sx,Sy,Sz);
   // Third transform (MULT)
+  //transformation.Mult2DRotation(angle);
+  //transformation.MultTranslation(Tx,Ty,Tz);
+  //transformation.MultScale(Sx,Sy,Sz);
 
   // Pass the transformation matrix to the vertex shader via Uniform Variable
   var u_xformMatrix = gl.getUniformLocation(gl.program, 'u_xformMatrix');
@@ -301,11 +469,31 @@ function scaleslider(){
 	Sx = slider.value;
 }
 
+// Reset all transformations
+function reset(){
+	Tx = 0.0;
+	Ty = 0.0;
+	Tz = 0.0;
+
+	angle = 0.0;
+
+	Sx = 1.0;
+	Sy = 1.0;
+	Sz = 1.0;
+
+	document.getElementById("slider1").value = 0;
+	document.getElementById("slider2").value = 0;
+	document.getElementById("slider3").value = 0;
+	document.getElementById("slider4").value = 0;
+}
+
 
 
 main();
 
 
+// WebGL Utility functions below
+// Not specific to this program
 
 // Call this function to ready text rendering
 function setupText(canvas){
