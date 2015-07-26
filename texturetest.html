@@ -88,10 +88,10 @@ function main() {
 
 	// width over height
 	// The aspect ratio is important for rendering on non-square canvases
-	var aspectRatio = canvas.width / canvas.height;
-	ctx.scale(1/aspectRatio,1);
+	//var aspectRatio = canvas.width / canvas.height;
+	//ctx.scale(1/aspectRatio,1);
 	
-	//************************************************************************
+//************************************************************************
 // Init vertices
   // Create the buffer object
   var vertexTexCoordBuffer = gl.createBuffer();
@@ -103,7 +103,7 @@ function main() {
   // Bind the buffer object to target
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
 
-	// Test many texts
+	// Test many words
 	var vertical = 40;
 	var horiz = 50;
 
@@ -111,25 +111,12 @@ function main() {
 		for(j=0; j<horiz; j++){
 			// get a random word
 			index = Math.floor(Math.random()*loremipsum.length);
-
-			// Ready the quadrilateral
-			// The text will render in quadrilateral
-			/*
-			var verticesTexCoords = new Float32Array([
-			// Vertex coordinates, texture coordinate
-				-1.0+j*(0.09),  1.0-i*(0.05),   0.0, 1.0,
-				-1.0+j*(0.09),  0.4-i*(0.05),   0.0, 0.0,
-				-0.4+j*(0.09),  1.0-i*(0.03),   1.0, 1.0,
-				-0.4+j*(0.09),  0.4-i*(0.03),   1.0, 0.0,
-			]);
-			*/
-
-			index = Math.floor(Math.random()*loremipsum.length);
 			loadWord(loremipsum[index], -1.0+j*(0.09), 1.0-i*(0.05));  
 		}
 	}
 	var numWords = document.getElementById("numwords");
 	numWords.innerHTML = "Words: " + words.length;
+
 
 /*
 	// get a random word
@@ -143,14 +130,16 @@ function main() {
 }
 
 function loadWord(word, x, y){
+	var canvas = document.getElementById('webgl');
+	var aspectRatio = canvas.width / canvas.height;
 
-	len = 0.9; // lenght of side of square
+	len = 0.9; // length of side of square
 	// Ready the quadrilateral
 	// The text will render in quadrilateral
 	var verticesTexCoords = new Float32Array([
 	// Vertex coordinates, texture coordinate
 		0.0,  0.0,   0.0, 1.0,
-		0.0,  0.0-len,   0.0, 0.0,
+		0.0,  0.0-(len*aspectRatio),   0.0, 0.0,
 		0.0+len,  0.0,   1.0, 1.0,
 		0.0+len,  0.4,   1.0, 0.0,
 	]);
