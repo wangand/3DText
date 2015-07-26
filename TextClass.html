@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Text Class</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="webgl" width="512" height="512" style="border:1px solid #000000;">
+    Please use a browser that supports "canvas"
+    </canvas>
+	<canvas id="canvas2" style="border:1px solid #000000; background:transparent; visibility:hidden;">
+	</canvas>
+	<div id="fps">Hello</div>
+	<div id="numwords">Words: 1</div>
+
+	<script>
+function Text(text, quadCoords, x, y, texture){
+	this.text = text;
+	this.quadCoords = quadCoords;
+	this.x = x;
+	this.y = y;
+	this.texture = texture;
+}
+
+	// For the array of words
+	var n = 4;
+	var words = [];
+	
+	// For the translation variables
+	var Tx = 0.0, Ty = 0.0, Tz = 0.0;
+	
+	// For keeping track of time
+	var now, elapsed, then;
+	
+// Shader programs from code from matsuda and kanda 2012
+// Found in WebGL Programming Guide
+// Vertex shader program
+var VSHADER_SOURCE =
+  'attribute vec4 a_Position;\n' +
+  'attribute vec2 a_TexCoord;\n' +
+  'varying vec2 v_TexCoord;\n' +
+  'uniform vec4 u_Translation;\n' +
+  'void main() {\n' +
+  '  gl_Position = a_Position + u_Translation;\n' +
+  '  v_TexCoord = a_TexCoord;\n' +
+  '}\n';
+
+// Fragment shader program
+var FSHADER_SOURCE =
+  '#ifdef GL_ES\n' +
+  'precision mediump float;\n' +
+  '#endif\n' +
+  'uniform sampler2D u_Sampler;\n' +
+  'varying vec2 v_TexCoord;\n' +
+  'void main() {\n' +
+  '  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
+  '}\n';
+  
+var loremipsum = [
+	"Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
+	"eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore", "magna", "aliqua.", "Ut enim", "ad", "minim",
+	"veniam,", "quis", "nostrud", "exercitation", "ullamco", "laboris", "nisi", "ut", "aliquip", "ex ea", "commodo", "consequat.",
+	"Duis", "aute", "irure", "dolor", "in", "reprehenderit", "in", "voluptate", "velit", "esse", "cillum", "dolore", "eu",
+	"fugiat", "nulla", "pariatur.", "Excepteur", "sint", "occaecat", "cupidatat", "non", "proident,", "sunt", "in", "culpa", 
+	"qui", "officia", "deserunt", "mollit", "anim", "id est", "laborum.",
+	"123", "456", "789", "0!@#"
+];
+
+function main() {
+
+	// we will write our text on canvas2
+	// Note that its size must be a power of 2!
+	canvasWidth = 512;
+	canvasHeight = 512;
+	var canvas2 = document.getElementById("canvas2");
+	if(canvas2.width != canvasWidth || canvas2.height != canvasHeight){
+		canvas2.width = canvasWidth;
+		canvas2.height = canvasHeight;
+	}
+	var ctx = canvas2.getContext("2d");
+	ctx.font = "20px Times New Roman";
+	ctx.fillStyle = "white";
+
+
+	// Retrieve <canvas> element and ready page for rext rendering
+	var canvas = document.getElementById('webgl');
+	setupText(canvas);
+
+	// Color for clearing the WebGL canvas
+	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
+
+	// width over height
+	// The aspect ratio is important for rendering on non-square canvases
+	//var aspectRatio = canvas.width / canvas.height;
+	//ctx.scale(1/aspectRatio,1);
+	
+//************************************************************************
+// Init vertices
+  // Create the buffer object
+  var vertexTexCoordBuffer = gl.createBuffer();
+  if (!vertexTexCoordBuffer) {
+    console.log('Failed to create the buffer object');
+    return -1;
+  }
+
+  // Bind the buffer object to target
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
+
+	// Test many words
+	var vertical = 40;
+	var horiz = 50;
+
+/*
+	for(i=0; i<vertical; i++){
+		for(j=0; j<horiz; j++){
+			// get a random word
+			index = Math.floor(Math.random()*loremipsum.length);
+			loadWord(loremipsum[index], -1.0+j*(0.09), 1.0-i*(0.05));  
+		}
+	}
+	var numWords = document.getElementById("numwords");
+	numWords.innerHTML = "Words: " + words.length;
+*/
+
+
+	// get a random word
+	index = Math.floor(Math.random()*loremipsum.length);
+	loadWord(loremipsum[index], 0.0, 0.0);  
+
+
+	canvas.onmousedown = (function(ev){click(ev,gl,canvas)});
+
+  animate(gl);
+}
+
+function loadWord(word, x, y){
+	var canvas = document.getElementById('webgl');
+	var aspectRatio = canvas.width / canvas.height;
+
+	len = 0.9; // length of side of square
+	// Ready the quadrilateral
+	// The text will render in quadrilateral
+	var verticesTexCoords = new Float32Array([
+	// Vertex coordinates, texture coordinate
+		0.0,  0.0,   0.0, 1.0,
+		0.0,  0.0-(len*aspectRatio),   0.0, 0.0,
+		0.0+len,  0.0,   1.0, 1.0,
+		0.0+len,  0.4,   1.0, 0.0,
+	]);
+
+	var canvas2 = document.getElementById("canvas2");
+	var ctx = canvas2.getContext("2d");
+	ctx.font = "20px Times New Roman";
+	ctx.fillStyle = "white";
+
+	// Write word on canvas
+	ctx.clearRect(0,0, canvas2.width, canvas2.height);
+	ctx.fillText(word,0,0+25);
+
+//************************************************************************
+// Load Texture
+	var texture = gl.createTexture();   // Create a texture object
+	  if (!texture) {
+		console.log('Failed to create the texture object');
+		return false;
+	  }
+
+	  // Get the storage location of u_Sampler
+	  var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+	  if (!u_Sampler) {
+		console.log('Failed to get the storage location of u_Sampler');
+		return false;
+	  }
+	  
+	  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+	  
+	  var temp = new Text(word, verticesTexCoords,x,y,texture);
+	  //words.push([word, verticesTexCoords, x,y, texture]);
+	  words.push(temp);
+}
+
+function draw(gl){
+gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
+	for(i=0; i<words.length; i++){
+		  //**************************************************************************
+	  // This needs to be called each time
+	  gl.bufferData(gl.ARRAY_BUFFER, words[i].quadCoords, gl.STATIC_DRAW);
+
+	  var FSIZE = words[i].quadCoords.BYTES_PER_ELEMENT;
+	  //Get the storage location of a_Position, assign and enable buffer
+	  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+	  if (a_Position < 0) {
+		console.log('Failed to get the storage location of a_Position');
+		return -1;
+	  }
+	  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+	  gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
+
+	  // Get the storage location of a_TexCoord
+	  var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
+	  if (a_TexCoord < 0) {
+		console.log('Failed to get the storage location of a_TexCoord');
+		return -1;
+	  }
+	  // Assign the buffer object to a_TexCoord variable
+	  gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+	  gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
+
+//************************************************************************
+// Init Texture
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+	  // Enable texture unit0
+	  gl.activeTexture(gl.TEXTURE0);
+	  // Bind the texture object to the target
+	  gl.bindTexture(gl.TEXTURE_2D, words[i].texture);
+
+	  // Set the texture parameters
+	  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	  // Set the texture image
+	  //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+	  //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	  
+	    var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+	if (!u_Sampler) {
+		console.log('Failed to get the storage location of u_Sampler');
+		return false;
+	}
+	  
+	  // Set the texture unit 0 to the sampler
+	  gl.uniform1i(u_Sampler, 0);
+	  
+//*************************************************************************
+// Set translation variable
+	Tx = words[i].x;
+	Ty = words[i].y;
+
+	 // Pass the translation distance to the vertex shader
+	 var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
+	 if (!u_Translation) {
+		console.log('Failed to get the storage location of u_Translation');
+		return;
+	 }
+	 gl.uniform4f(u_Translation, Tx, Ty, Tz, 0.0);
+
+
+
+
+ 
+	 gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
+	}
+}
+
+function animate(gl){
+	draw(gl);
+	
+	now = Date.now();
+	elapsed = now - then;
+	
+	then = now;
+	
+	document.getElementById("fps").innerHTML = Math.round(1000/elapsed);
+	
+	// animate
+	for(i=0;i<words.length;i++){
+		words[i].x += (Math.random()*2 -1)/100;
+		words[i].y += (Math.random()*2 -1)/100;
+		//Tx += (Math.random()*2 -1)/100;
+		//Ty += (Math.random()*2 -1)/100;
+	}
+	
+	
+	requestAnimationFrame(function(){animate(gl)});
+}
+
+// Call this function to ready text rendering
+function setupText(canvas){
+  // Get a WebGL context inspired from example on MDN:
+  // https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL
+  gl = null;
+  gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    // Make sure we got a context
+  if (!gl) {
+    alert("Failed to initialize WebGL. Please use a WebGL compatible browser.");
+    gl = null;
+    return;
+  }
+
+  // IMPORTANT
+  // This code allows WebGL to do transparencies
+  // Without these lines, a white box will show up
+  // from: http://webglfundamentals.org/webgl/lessons/webgl-text-texture.html
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  
+  // Initialize shaders
+   if (!initializeShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+    console.log('Failed to intialize shaders.');
+    return;
+  }
+}
+
+function click(ev, gl, canvas) {
+  var x = ev.clientX; // x coordinate of a mouse pointer
+  var y = ev.clientY; // y coordinate of a mouse pointer
+  var rect = ev.target.getBoundingClientRect() ;
+
+  x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
+  y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
+
+  // Add word at that location
+  var index = Math.floor(Math.random()*loremipsum.length);
+  loadWord(loremipsum[index], x, y);  
+  
+  var numWords = document.getElementById("numwords");
+  numWords.innerHTML = "Words: " + words.length;
+  
+}
+
+// This function initializes shaders
+// modified from cuon-utils.js from WebGL Programming Guide
+// Returns true if shaders successfully initialized in program
+// Returns false otherwise
+function initializeShaders(gl, vshader, fshader){
+	// make and verify vertex shader object
+	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	if(vertexShader == null){
+		console.log("Unable to create vertex shader");
+		return false;
+	}
+	
+	// set vertex shader program source and compile
+	gl.shaderSource(vertexShader, vshader);
+	gl.compileShader(vertexShader);
+	
+	// Check result of vertexShader compilation
+	if(!(gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(vertexShader);
+		console.log('Failed to compile vertex shader: ' + errorMsg);
+		gl.deleteShader(vertexShader);
+		return false;
+	}
+	
+	
+	// make and verify fragment shader object
+	var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	if(fragmentShader == null){
+		console.log("Unable to create fragment shader");
+		return false;
+	}
+	
+	// set fragment shader program source and compile
+	gl.shaderSource(fragmentShader, fshader);
+	gl.compileShader(fragmentShader);
+	
+	// Check result of fragmentShader compilation
+	if(!(gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(fragmentShader);
+		console.log('Failed to compile fragment shader: ' + errorMsg);
+		gl.deleteShader(fragmentShader);
+		return false;
+	}
+
+	// Verify both shaders created
+	if(!vertexShader || !fragmentShader){
+		console.log("shaders no load");
+		return false;
+	}
+
+	// make and verify program object
+	var program = gl.createProgram();
+	if(!program){
+		console.log("program no create");
+		return false;
+	}
+
+	// Attach vertex and fragment shader to program object
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+
+	// Link program and verify linkng
+	gl.linkProgram(program);
+	if(!(gl.getProgramParameter(program, gl.LINK_STATUS))){
+		var errorMsg = gl.getProgramInfoLog(program);
+		console.log('Program filed to link: ' + errorMsg);
+		gl.deleteProgram(program);
+		gl.deleteShader(fragmentShader);
+		gl.deleteShader(vertexShader);
+		console.log("no program got");
+		return false;
+	}
+
+	// Use and set the program
+	gl.useProgram(program);
+	gl.program = program;
+	return true;
+}
+
+function initVertexBuffers(gl, verticesTexCoords) {
+
+  var n = 4; // The number of vertices
+
+  // Create the buffer object
+  var vertexTexCoordBuffer = gl.createBuffer();
+  if (!vertexTexCoordBuffer) {
+    console.log('Failed to create the buffer object');
+    return -1;
+  }
+
+  // Bind the buffer object to target
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexTexCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, verticesTexCoords, gl.STATIC_DRAW);
+
+  var FSIZE = verticesTexCoords.BYTES_PER_ELEMENT;
+  //Get the storage location of a_Position, assign and enable buffer
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  if (a_Position < 0) {
+    console.log('Failed to get the storage location of a_Position');
+    return -1;
+  }
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+  gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
+
+  // Get the storage location of a_TexCoord
+  var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
+  if (a_TexCoord < 0) {
+    console.log('Failed to get the storage location of a_TexCoord');
+    return -1;
+  }
+  // Assign the buffer object to a_TexCoord variable
+  gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+  gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
+
+  return n;
+}
+
+function initTextures(gl, n) {
+  var texture = gl.createTexture();   // Create a texture object
+  if (!texture) {
+    console.log('Failed to create the texture object');
+    return false;
+  }
+
+  // Get the storage location of u_Sampler
+  var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+  if (!u_Sampler) {
+    console.log('Failed to get the storage location of u_Sampler');
+    return false;
+  }
+  
+  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+  //loadTexture(gl, n, texture, u_Sampler, canvas2);
+
+  return true;
+}
+
+function loadTexture(gl, n, texture, u_Sampler, image) {
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+  // Enable texture unit0
+  gl.activeTexture(gl.TEXTURE0);
+  // Bind the texture object to the target
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // Set the texture parameters
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  // Set the texture image
+  //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  
+  // Set the texture unit 0 to the sampler
+  gl.uniform1i(u_Sampler, 0);
+  
+  //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
+}
+
+	</script>
+
+  </body>
+</html>
