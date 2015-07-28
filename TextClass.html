@@ -25,9 +25,13 @@ function Text(text, quadCoords, x, y, texture){
 }
 */
 function Text(canvas, word, x, y){
+	// Setup hidden 2D canvas
 	var aspectRatio = canvas.width / canvas.height;
+	var ctx = canvas.getContext("2d");
+	ctx.font = "20px Times New Roman";
+	ctx.fillStyle = "white";
+	var len = 0.9; // length of side of square
 
-	len = 0.9; // length of side of square
 	// Ready the quadrilateral
 	// The text will render in quadrilateral
 	var verticesTexCoords = new Float32Array([
@@ -38,31 +42,27 @@ function Text(canvas, word, x, y){
 		0.0+len,  0.4,   1.0, 0.0,
 	]);
 
-	var canvas2 = document.getElementById("canvas2");
-	var ctx = canvas2.getContext("2d");
-	ctx.font = "20px Times New Roman";
-	ctx.fillStyle = "white";
-
-	// Write word on canvas
+	// Write word on hidden 2d canvas
 	ctx.clearRect(0,0, canvas2.width, canvas2.height);
 	ctx.fillText(word,0,0+25);
 
-
-	var texture = gl.createTexture();   // Create a texture object
-	  if (!texture) {
+	// Create and verify texture object
+	var texture = gl.createTexture();
+	if (!texture) {
 		console.log('Failed to create the texture object');
 		return false;
-	  }
+	}
 
-	  // Get the storage location of u_Sampler
-	  var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
-	  if (!u_Sampler) {
+	// Get the storage location of u_Sampler to load texture into WebGL
+	var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+	if (!u_Sampler) {
 		console.log('Failed to get the storage location of u_Sampler');
 		return false;
-	  }
-	  
-	  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
-	  
+	}
+	// Load the texture
+	loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+	
+	// Set the variables for Text object
 	this.text = word;
 	this.quadCoords = verticesTexCoords;
 	this.x = x;
