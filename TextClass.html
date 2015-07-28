@@ -6,13 +6,21 @@
   </head>
 
   <body onload="main()">
-    <canvas id="webgl" width="512" height="512" style="border:1px solid #000000;">
+    <canvas id="webgl" width="1024" height="512" style="border:1px solid #000000;">
     Please use a browser that supports "canvas"
     </canvas>
 	<canvas id="canvas2" style="border:1px solid #000000; background:transparent; visibility:hidden;">
 	</canvas>
 	<div id="fps">Hello</div>
 	<div id="numwords">Words: 1</div>
+	<input type="button" value="animate" onclick="yesAnimate()">
+	<input type="button" value="no animate" onclick="noAnimate()">
+	<br/>
+	<input type="text" value="300" id="lengthval" onchange="changeLength()">
+	<br/>
+	<input type="button" value="square" onclick="square()">
+	<input type="button" value="wide" onclick="wide()">
+	<input type="button" value="long" onclick="long()">
 
 	<script>
 /*
@@ -24,7 +32,7 @@ function Text(text, quadCoords, x, y, texture){
 	this.texture = texture;
 }
 */
-function Text(canvas, word, x, y){
+function Text(canvas, word, x, y, toX, toY){
 	// Setup hidden 2D canvas
 	var aspectRatio = canvas.width / canvas.height;
 	var ctx = canvas.getContext("2d");
@@ -32,6 +40,7 @@ function Text(canvas, word, x, y){
 	ctx.fillStyle = "white";
 	var len = 0.9; // length of side of square
 
+	/*
 	// Ready the quadrilateral
 	// The text will render in quadrilateral
 	var verticesTexCoords = new Float32Array([
@@ -41,6 +50,18 @@ function Text(canvas, word, x, y){
 		0.0+len,  0.0,   1.0, 1.0,
 		0.0+len,  0.4,   1.0, 0.0,
 	]);
+
+	*/
+	// Ready the quadrilateral
+	// The text will render in quadrilateral
+	var verticesTexCoords = new Float32Array([
+	// Vertex coordinates, texture coordinate
+		x,  y,   0.0, 1.0,
+		x,  toY,   0.0, 0.0,
+		toX,  y,   1.0, 1.0,
+		toX,  toY,   1.0, 0.0,
+	]);
+	document.getElementById("numwords").innerHTML = x+" "+y+" "+toX+" "+toY;
 
 	// Write word on hidden 2d canvas
 	ctx.clearRect(0,0, canvas2.width, canvas2.height);
@@ -68,8 +89,12 @@ function Text(canvas, word, x, y){
 	this.x = x;
 	this.y = y;
 	this.texture = texture;
+	this.transX = 0.0;
+	this.transY = 0.0;
 }
 
+//************************************************************************************
+// Global variables
 	// For the array of words
 	var n = 4;
 	var words = [];
@@ -79,6 +104,12 @@ function Text(canvas, word, x, y){
 	
 	// For keeping track of time
 	var now, elapsed, then;
+	
+	// Animate or not
+	var doAnimate = true;
+	
+	// Size of words
+	var length = 300;
 	
 // Shader programs from code from matsuda and kanda 2012
 // Found in WebGL Programming Guide
@@ -175,7 +206,7 @@ function main() {
 	// get a random word
 	index = Math.floor(Math.random()*loremipsum.length);
 	//loadWord(loremipsum[index], 0.0, 0.0);
-	words.push(new Text(canvas2, loremipsum[index],0.0,0.0));
+	words.push(new Text(canvas2, loremipsum[index],0.0,0.0,0.9,-0.9));
 
 
 	canvas.onmousedown = (function(ev){click(ev,gl,canvas)});
@@ -281,8 +312,8 @@ gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
 	  
 //*************************************************************************
 // Set translation variable
-	Tx = words[i].x;
-	Ty = words[i].y;
+	Tx = words[i].transX;
+	Ty = words[i].transY;
 
 	 // Pass the translation distance to the vertex shader
 	 var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
@@ -291,9 +322,6 @@ gl.clear(gl.COLOR_BUFFER_BIT);   // clear the WebGL canvas
 		return;
 	 }
 	 gl.uniform4f(u_Translation, Tx, Ty, Tz, 0.0);
-
-
-
 
  
 	 gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
@@ -311,15 +339,42 @@ function animate(gl){
 	document.getElementById("fps").innerHTML = Math.round(1000/elapsed);
 	
 	// animate
+	if(doAnimate === true){
 	for(i=0;i<words.length;i++){
-		words[i].x += (Math.random()*2 -1)/100;
-		words[i].y += (Math.random()*2 -1)/100;
-		//Tx += (Math.random()*2 -1)/100;
-		//Ty += (Math.random()*2 -1)/100;
+		words[i].transX += (Math.random()*2 -1)/100;
+		words[i].transY += (Math.random()*2 -1)/100;
+	}
 	}
 	
-	
 	requestAnimationFrame(function(){animate(gl)});
+}
+
+function yesAnimate(){
+	doAnimate = true;
+}
+function noAnimate(){
+	doAnimate = false;
+}
+
+function changeLength(){
+	var lengthval = document.getElementById("lengthval");
+	length = parseInt(lengthval.value);
+}
+
+function square(){
+	var canvas = document.getElementById("webgl");
+	canvas.width = 512;
+	canvas.height = 512;
+}
+function wide(){
+	var canvas = document.getElementById("webgl");
+	canvas.width = 1024;
+	canvas.height = 512;
+}
+function long(){
+	var canvas = document.getElementById("webgl");
+	canvas.width = 512;
+	canvas.height = 1024;
 }
 
 // Call this function to ready text rendering
@@ -353,18 +408,32 @@ function click(ev, gl, canvas) {
   var x = ev.clientX; // x coordinate of a mouse pointer
   var y = ev.clientY; // y coordinate of a mouse pointer
   var rect = ev.target.getBoundingClientRect() ;
+  
+  // Reduce error from bounding box
+  x = x-rect.left;
+  y = y-rect.top;
+  
+  // Figure out what length is good (for leg of square quadrilateral)
+  var toX = x+length;
+  var toY = y+length;
+  
 
-  x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
-  y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
+  
+  x = (x - canvas.width/2)/(canvas.width/2);
+  y = (canvas.height/2 - y)/(canvas.height/2);
+  
+  toX = ((toX) - canvas.width/2)/(canvas.width/2);
+  toY = (canvas.height/2 - (toY))/(canvas.height/2);
+  
+
 
   // Add word at that location
 	index = Math.floor(Math.random()*loremipsum.length);
 	//loadWord(loremipsum[index], 0.0, 0.0);
-	words.push(new Text(canvas2, loremipsum[index],x,y));
+	words.push(new Text(canvas2, loremipsum[index],x,y,toX,toY));
   
   var numWords = document.getElementById("numwords");
   numWords.innerHTML = "Words: " + words.length;
-  
 }
 
 // This function initializes shaders
