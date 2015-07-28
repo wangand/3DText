@@ -15,9 +15,56 @@
 	<div id="numwords">Words: 1</div>
 
 	<script>
+/*
 function Text(text, quadCoords, x, y, texture){
 	this.text = text;
 	this.quadCoords = quadCoords;
+	this.x = x;
+	this.y = y;
+	this.texture = texture;
+}
+*/
+function Text(canvas, word, x, y){
+	var aspectRatio = canvas.width / canvas.height;
+
+	len = 0.9; // length of side of square
+	// Ready the quadrilateral
+	// The text will render in quadrilateral
+	var verticesTexCoords = new Float32Array([
+	// Vertex coordinates, texture coordinate
+		0.0,  0.0,   0.0, 1.0,
+		0.0,  0.0-(len*aspectRatio),   0.0, 0.0,
+		0.0+len,  0.0,   1.0, 1.0,
+		0.0+len,  0.4,   1.0, 0.0,
+	]);
+
+	var canvas2 = document.getElementById("canvas2");
+	var ctx = canvas2.getContext("2d");
+	ctx.font = "20px Times New Roman";
+	ctx.fillStyle = "white";
+
+	// Write word on canvas
+	ctx.clearRect(0,0, canvas2.width, canvas2.height);
+	ctx.fillText(word,0,0+25);
+
+
+	var texture = gl.createTexture();   // Create a texture object
+	  if (!texture) {
+		console.log('Failed to create the texture object');
+		return false;
+	  }
+
+	  // Get the storage location of u_Sampler
+	  var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+	  if (!u_Sampler) {
+		console.log('Failed to get the storage location of u_Sampler');
+		return false;
+	  }
+	  
+	  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+	  
+	this.text = word;
+	this.quadCoords = verticesTexCoords;
 	this.x = x;
 	this.y = y;
 	this.texture = texture;
@@ -127,7 +174,8 @@ function main() {
 
 	// get a random word
 	index = Math.floor(Math.random()*loremipsum.length);
-	loadWord(loremipsum[index], 0.0, 0.0);  
+	//loadWord(loremipsum[index], 0.0, 0.0);
+	words.push(new Text(canvas2, loremipsum[index],0.0,0.0));
 
 
 	canvas.onmousedown = (function(ev){click(ev,gl,canvas)});
@@ -310,8 +358,9 @@ function click(ev, gl, canvas) {
   y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
 
   // Add word at that location
-  var index = Math.floor(Math.random()*loremipsum.length);
-  loadWord(loremipsum[index], x, y);  
+	index = Math.floor(Math.random()*loremipsum.length);
+	//loadWord(loremipsum[index], 0.0, 0.0);
+	words.push(new Text(canvas2, loremipsum[index],x,y));
   
   var numWords = document.getElementById("numwords");
   numWords.innerHTML = "Words: " + words.length;
