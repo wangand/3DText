@@ -26,41 +26,6 @@ API:
 		obj.getFont(font);
 	5) Renderer automatically draws contents each cycle
 
-	WordHolder holds words and has the canvas array
-	WordHolder contains array of Word Objects
-	WordHolder contains array of SmartCanvas Objects
-	Word is a class that contains each text it contains:
-		text,
-		canvas where text is,
-		x, x coordinate on canvas of the text can be used for texture
-		y, y coordinate on canvas of the text can be used for texture
-		xc, x coordinate on the canvas
-		yc, y coordinate on the canvas
-	Smartcanvas is a canvas with record keeping, contains:
-		canvas,
-		current x coordinate to write a word
-		current y coordinate to write a word
-		next y coordinate to write a word on new line
-		current font
-
-Functions
-	Word: constructor
-	SmartCanvas: constructor
-		writeWord()
-		testWord() see if there is room in canvas
-		changeFont()
-		returnFont()
-		getFontHeight() gets height of font when font is changed
-	Word Holder:
-		Constructor
-		addWord(): User uses this function to add words
-		tryAdd(): Adds a word to current canvas
-			if canvas is full, adds another canvas
-			is called by AddWord
-		addCanvas();
-		setFont() Sets font of latest canvas
-		getFont() Gets font of latest canvas
-
 Use case 1: New canvas needed
 1) User calls addWord()
 2) addWord calls tryAdd() on last canvas in array
@@ -82,6 +47,12 @@ Use case 2: Font change needed
 4) changeFont calls getFontHeight()
 5) NextY updated accordingly. The current line gets taller or stays the same
 6) ready to write in new font
+
+Use case 3: rendering words
+1) Renderer cycles through each Word in array of Words
+2) Use vertices to get info for vertex buffers
+3) use canvas.texture to find correct texture for each word
+
 */ 
 //
 
@@ -113,21 +84,25 @@ WordHolder.prototype.setFont = function(font){
 WordHolder.prototype.getFont = function(){
 }
 
-//	Word is a class that contains each text it contains:
+//	Word is a class that contains each individual text
+// It contains:
 //		text,
 //		canvas where text is,
 //		x, x coordinate to be displayed in webgl
 //		y, y coordinate to be displayed in webgl
 //		xc, x coordinate on the canvas
 //		yc, y coordinate on the canvas
-// An individual word held in word Holder
+//		verticies, put in webgl buffer
+//			quadrilateral verticies
+//			texture verticies
 function Word(text, canvas, x, y, xc, yc){
 	this.text; // text of the word
-	this.canvas; // which canvas the word is in
+	this.canvas; // which SmartCanvas the word is in
 	this.x = x; // x coordinate in webgl
 	this.y = y; // y coordinate in webgl
 	this.xc; // x coordinate on the canvas
 	this.yc; // y coordinate on the canvas
+	this.verticies;
 }
 
 
@@ -137,6 +112,7 @@ function Word(text, canvas, x, y, xc, yc){
 //		current y coordinate to write a word
 //		next y coordinate to write a word on new line
 //		current font
+//		texture, stores webgl texture of this canvas
 function SmartCanvas(font, height){
 	this.canvas;
 	this.lastX = 0;
@@ -146,6 +122,7 @@ function SmartCanvas(font, height){
 		this.nextY = height;
 	}*/
 	this.currentFont = font;
+	this.texture;
 }
 //		testWord() see if there is room in canvas
 SmartCanvas.prototype.testWord = function(text){
@@ -222,9 +199,9 @@ function draw(){
 
 	var wordSize = getFontHeight(canvas);
 	console.log(wordSize);
-	ctx.fillRect(canvas.width/2,canvas.height/2,ctx.measureText("Hg").width, wordSize);
+	ctx.fillRect(canvas.width/2,canvas.height/2,ctx.measureText("Hg is Mercury").width, wordSize);
 	ctx.fillStyle = "blue";
-	ctx.fillText("Hg", canvas.width/2, canvas.height/2);
+	ctx.fillText("Hg is Mercury", canvas.width/2, canvas.height/2);
 	//ctx.fillStyle = "green";
 	//var newXY = webglToCanvas(0,0, canvas);
 	//var newXY = webglToCanvas(canvas.width-10,0, canvas);
