@@ -11,10 +11,378 @@
     </canvas>
 	<canvas id="canvas2" height=512" width="512" style="border:1px solid #000000; background:transparent; visibility:visible;">
 	</canvas>
-	<div id="fps">Hello</div>
+	<div id="fps">fps info here</div>
 
 <script>
+// Information for using WordHolder class
+/*
+API: 
+	1) User activities WordHolder() constructor
+	2) User adds as many words as needed with AddWord()
+			AddWord(text, x, y, font);
+	3) At any time between adding words, user can change font
+		obj.setFont(font);
+	4) At any time between adding words, user can check current font
+		obj.getFont(font);
+	5) Renderer automatically draws contents each cycle
+
+	WordHolder holds words and has the canvas array
+	WordHolder contains array of Word Objects
+	WordHolder contains array of SmartCanvas Objects
+	Word is a class that contains each text it contains:
+		text,
+		canvas where text is,
+		x, x coordinate on canvas of the text can be used for texture
+		y, y coordinate on canvas of the text can be used for texture
+		xc, x coordinate on the canvas
+		yc, y coordinate on the canvas
+	Smartcanvas is a canvas with record keeping, contains:
+		canvas,
+		current x coordinate to write a word
+		current y coordinate to write a word
+		next y coordinate to write a word on new line
+		current font
+
+Functions
+	Word: constructor
+	SmartCanvas: constructor
+		writeWord()
+		testWord() see if there is room in canvas
+		changeFont()
+		returnFont()
+		getFontHeight() gets height of font when font is changed
+	Word Holder:
+		Constructor
+		addWord(): User uses this function to add words
+		tryAdd(): Adds a word to current canvas
+			if canvas is full, adds another canvas
+			is called by AddWord
+		addCanvas();
+		setFont() Sets font of latest canvas
+		getFont() Gets font of latest canvas
+
+Use case 1: New canvas needed
+1) User calls addWord()
+2) addWord calls tryAdd() on last canvas in array
+2) last canvas in array tests the word
+3) The word is too wide for the current line and too tall for next line
+4) tryAdd() returns false
+5) addWord calls addCanvas
+6) new canvas with same font is added to array in WordHolder
+	nextY automatically set to height of old font
+7) tryAdd() called again
+8) tryAdd() returns true as is blank canvas
+8.5) if tryAdd fails now, could mean word is too big for entire canvas
+9) Now Word constructor called and new word added to array of words
+
+Use case 2: Font change needed
+1) User calls setFont in WordHolder
+2) setFont calls changeFont in latest SmartCanvas
+3) Font is changed in smart canvas
+4) changeFont calls getFontHeight()
+5) NextY updated accordingly. The current line gets taller or stays the same
+6) ready to write in new font
+*/ 
+//
+
+// Global object that holds words and has the canvas array
+// WordHolder contains array of Word Objects
+// WordHolder contains array of SmartCanvas Objects
+function WordHolder(){
+	// 1D array [word, word, word, ...]
+	this.wordArray;
+
+	// array [canvas, canvas, canvas, ...]
+	this.canvasArray;
+}
+// addWord(): User uses this function to add words
+WordHolder.prototype.addWord = function(text,x,y){
+}
+// tryAdd(): Adds a word to current canvas
+//			if canvas is full, adds another canvas
+//			is called by AddWord
+WordHolder.prototype.tryAdd = function(text,x,y){
+}
+//addCanvas();
+WordHolder.prototype.addCanvas = function(){
+}
+//setFont() Sets font of latest canvas
+WordHolder.prototype.setFont = function(font){
+}
+//getFont() Gets font of latest canvas
+WordHolder.prototype.getFont = function(){
+}
+
+//	Word is a class that contains each text it contains:
+//		text,
+//		canvas where text is,
+//		x, x coordinate to be displayed in webgl
+//		y, y coordinate to be displayed in webgl
+//		xc, x coordinate on the canvas
+//		yc, y coordinate on the canvas
+// An individual word held in word Holder
+function Word(text, canvas, x, y, xc, yc){
+	this.text; // text of the word
+	this.canvas; // which canvas the word is in
+	this.x = x; // x coordinate in webgl
+	this.y = y; // y coordinate in webgl
+	this.xc; // x coordinate on the canvas
+	this.yc; // y coordinate on the canvas
+}
+
+
+//	Smartcanvas is a canvas with record keeping, contains:
+//		canvas,
+//		current x coordinate to write a word
+//		current y coordinate to write a word
+//		next y coordinate to write a word on new line
+//		current font
+function SmartCanvas(font, height){
+	this.canvas;
+	this.lastX = 0;
+	this.lastY = 0;
+	/*
+	if(height != undefined){
+		this.nextY = height;
+	}*/
+	this.currentFont = font;
+}
+//		testWord() see if there is room in canvas
+SmartCanvas.prototype.testWord = function(text){
+}
+//		writeWord() writes a word to canvas in next available space
+SmartCanvas.prototype.writeWord = function(text){
+}
+//		changeFont()
+SmartCanvas.prototype.changeFont = function(font){
+}
+//		returnFont()
+SmartCanvas.prototype.returnFont = function(){
+}
+//		getFontHeight() gets height of font when font is changed
+SmartCanvas.prototype.getFontHeight = function(){
+}
+
+// Global variables
+var gl; // webgl program
+
+// Random words
+var loremipsum = [
+	"Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
+	"eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore", "magna", "aliqua.", "Ut enim", "ad", "minim",
+	"veniam,", "quis", "nostrud", "exercitation", "ullamco", "laboris", "nisi", "ut", "aliquip", "ex ea", "commodo", "consequat.",
+	"Duis", "aute", "irure", "dolor", "in", "reprehenderit", "in", "voluptate", "velit", "esse", "cillum", "dolore", "eu",
+	"fugiat", "nulla", "pariatur.", "Excepteur", "sint", "occaecat", "cupidatat", "non", "proident,", "sunt", "in", "culpa", 
+	"qui", "officia", "deserunt", "mollit", "anim", "id est", "laborum.",
+	"123", "456", "789", "0!@#"
+];
+
+function main(){
+	draw();
+}
+
+function webglToCanvas(x, y, canvas){
+	var width = canvas.width;
+	var height = canvas.height;
+	var newX;
+	var newY;
+
+	// Convert to webgl coordinates from canvas
+	newX = (x - width/2) / (width/2);
+	newY = (height/2 - y) / (height/2);
+	console.log(newX+" "+newY);
+	return [newX,newY];
+}
+function canvasToWebgl(x, y, canvas){
+	var width = canvas.width;
+	var height = canvas.height;
+	var newX;
+	var newY;
+
+	// Convert to canvas coordinates from webgl
+	newX = (x*(width/2)) + width/2;
+	newY = ((1-y)*(height/2)); // broken
+	console.log(newX+" "+newY);
+	return [newX,newY];
+}
+
+// Tries to pack a word into a canvas
+// Returns true if packed, false if cannot.
+function tryPack(lastX,lastY,word,canvas){
 	
+}
+
+function draw(){
+	var canvas = document.getElementById("canvas2");
+	var ctx = canvas.getContext("2d");
+	ctx.textBaseline="top"; //*** CRUCIAL CODE ***
+	ctx.font = "20px Times New Roman";
+	ctx.fillStyle = "red";
+	//ctx.fillRect(canvas.width/2,canvas.height/2,10,10); // fill in the pixel at (10,10)
+
+	var wordSize = getFontHeight(canvas);
+	console.log(wordSize);
+	ctx.fillRect(canvas.width/2,canvas.height/2,ctx.measureText("Hg").width, wordSize);
+	ctx.fillStyle = "blue";
+	ctx.fillText("Hg", canvas.width/2, canvas.height/2);
+	//ctx.fillStyle = "green";
+	//var newXY = webglToCanvas(0,0, canvas);
+	//var newXY = webglToCanvas(canvas.width-10,0, canvas);
+	//var newNewXY = canvasToWebgl(newXY[0], newXY[1], canvas);
+	//ctx.fillRect(newNewXY[0],newNewXY[1],10,10); // fill in the pixel at (10,10)
+}
+function animate(){
+	
+}
+
+// Adapted from this stackoverflow answer by Michaelangelo:
+//http://stackoverflow.com/questions/11452022/measure-text-height-on-an-html5-canvas-element
+// 1) create div with word and font used in canvas
+// 2) measure div
+// 3) remove div
+function getFontHeight(canvas){
+	var div = document.createElement("div");
+	div.style.position = 'absolute'; // required for making div start out small as possible
+	//div.style.left = '-999px';
+	//div.style.top = '-999px';
+	div.innerHTML = "Hg"; // High and Low word
+	var ctx = canvas.getContext("2d");
+	var font = "font: "+ctx.font+";";
+	div.setAttribute("style", font);
+	document.body.appendChild(div);
+	var size = [div.offsetWidth, div.offsetHeight];
+	document.body.removeChild(div);
+	return size[1];
+}
+
+function click(ev, gl, canvas) {
+  var x = ev.clientX; // x coordinate of a mouse pointer
+  var y = ev.clientY; // y coordinate of a mouse pointer
+  var rect = ev.target.getBoundingClientRect() ;
+  
+  // Reduce error from bounding box
+  x = x-rect.left;
+  y = y-rect.top;
+  
+  // Figure out what length is good (for leg of square quadrilateral)
+  var toX = x+length;
+  var toY = y+length;
+  
+
+  
+  x = (x - canvas.width/2)/(canvas.width/2);
+  y = (canvas.height/2 - y)/(canvas.height/2);
+  
+  toX = ((toX) - canvas.width/2)/(canvas.width/2);
+  toY = (canvas.height/2 - (toY))/(canvas.height/2);
+  
+}
+
+// Call this function to ready text rendering
+function setupText(canvas){
+  // Get a WebGL context inspired from example on MDN:
+  // https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL
+  gl = null;
+  gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    // Make sure we got a context
+  if (!gl) {
+    alert("Failed to initialize WebGL. Please use a WebGL compatible browser.");
+    gl = null;
+    return;
+  }
+
+  // IMPORTANT
+  // This code allows WebGL to do transparencies
+  // Without these lines, a white box will show up
+  // from: http://webglfundamentals.org/webgl/lessons/webgl-text-texture.html
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  
+  // Initialize shaders
+   if (!initializeShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+    console.log('Failed to intialize shaders.');
+    return;
+  }
+}
+
+// This function initializes shaders
+// modified from cuon-utils.js from WebGL Programming Guide
+// Returns true if shaders successfully initialized in program
+// Returns false otherwise
+function initializeShaders(gl, vshader, fshader){
+	// make and verify vertex shader object
+	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+	if(vertexShader == null){
+		console.log("Unable to create vertex shader");
+		return false;
+	}
+	
+	// set vertex shader program source and compile
+	gl.shaderSource(vertexShader, vshader);
+	gl.compileShader(vertexShader);
+	
+	// Check result of vertexShader compilation
+	if(!(gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(vertexShader);
+		console.log('Failed to compile vertex shader: ' + errorMsg);
+		gl.deleteShader(vertexShader);
+		return false;
+	}
+	
+	
+	// make and verify fragment shader object
+	var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+	if(fragmentShader == null){
+		console.log("Unable to create fragment shader");
+		return false;
+	}
+	
+	// set fragment shader program source and compile
+	gl.shaderSource(fragmentShader, fshader);
+	gl.compileShader(fragmentShader);
+	
+	// Check result of fragmentShader compilation
+	if(!(gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))){
+		var errorMsg = gl.getShaderInfoLog(fragmentShader);
+		console.log('Failed to compile fragment shader: ' + errorMsg);
+		gl.deleteShader(fragmentShader);
+		return false;
+	}
+
+	// Verify both shaders created
+	if(!vertexShader || !fragmentShader){
+		console.log("shaders no load");
+		return false;
+	}
+
+	// make and verify program object
+	var program = gl.createProgram();
+	if(!program){
+		console.log("program no create");
+		return false;
+	}
+
+	// Attach vertex and fragment shader to program object
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+
+	// Link program and verify linkng
+	gl.linkProgram(program);
+	if(!(gl.getProgramParameter(program, gl.LINK_STATUS))){
+		var errorMsg = gl.getProgramInfoLog(program);
+		console.log('Program filed to link: ' + errorMsg);
+		gl.deleteProgram(program);
+		gl.deleteShader(fragmentShader);
+		gl.deleteShader(vertexShader);
+		console.log("no program got");
+		return false;
+	}
+
+	// Use and set the program
+	gl.useProgram(program);
+	gl.program = program;
+	return true;
+}
 </script>
 
   </body>
