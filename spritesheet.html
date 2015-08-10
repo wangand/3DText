@@ -77,16 +77,21 @@ function WordHolder(){
 WordHolder.prototype.addWord = function(text,x,y){
 	var testval = this.tryAdd(text);
 	var latest = this.canvasArray[this.canvasArray.length-1];
+	var widthHeight;
 	
-	// Render according to testval
+	// Add to canvas according to testval
 	if(testval !== -1){ // no need for new canvas
-		latest.writeWord(text, testval);
+		widthHeight = latest.writeWord(text, testval);
 	}
 	else{ // need new canvas
 		this.addCanvas();
 		latest = this.canvasArray[this.canvasArray.length-1];
-		latest.writeWord(text, 0);
+		widthHeight = latest.writeWord(text, 0);
 	}
+	
+	// Add word to wordArray
+	//Word(text, canvas, x, y, xc, yc, widthc, heightc)
+	this.wordArray.push(new Word(text, latest, x, y, widthHeight[0], widthHeight[1], widthHeight[0]-latest.lastX, latest.nextY));
 }
 // tryAdd(): Adds a word to current canvas
 //			if canvas is full, adds another canvas
@@ -121,18 +126,20 @@ WordHolder.prototype.render = function(webglcanvas){
 //		y, y coordinate to be displayed in webgl
 //		xc, x coordinate on the canvas
 //		yc, y coordinate on the canvas
+//		widthc, width of text on canvas
+//		heightc, height of text on canvas
 //		verticies, put in webgl buffer
 //			quadrilateral verticies
 //			texture verticies
-function Word(text, canvas, x, y, width, height, xc, yc){
+function Word(text, canvas, x, y, xc, yc, widthc, heightc){
 	this.text; // text of the word
 	this.canvas; // which SmartCanvas the word is in
 	this.x = x; // x coordinate in webgl
 	this.y = y; // y coordinate in webgl
-	this.width = width; // width of text on canvas
-	this.height = height; // height of text on canvas
 	this.xc; // x coordinate on the canvas
 	this.yc; // y coordinate on the canvas
+	this.width = widthc; // width of text on canvas
+	this.height = heightc; // height of text on canvas
 	this.verticies;
 }
 
@@ -291,13 +298,6 @@ var loremipsum = [
 ];
 
 function main(){
-	// Test WordHolder Word functionality
-	
-	
-
-	draw();
-	
-	/*
 	// Test WordHolder canvas functionality
 	// Test a new WordHolder
 	var holder = new WordHolder();
@@ -347,7 +347,8 @@ function main(){
 	holder.addWord("Cat",0,0);
 	
 	// Test WordHolder canvas packing
-	for(i=0; i<54; i++){
+	var numtests = 54;
+	for(i=0; i<numtests; i++){
 		holder.addWord("Magnet",0,0);
 	}
 	initialCanvasFont = holder.getFont();
@@ -361,7 +362,16 @@ function main(){
 			console.log(initialCanvasFont);
 			console.log(initialCtxFont);
 	}
-	*/
+	
+	// Test WordHolder Word functionality
+	if(holder.wordArray.length === numtests+2){
+		console.log("Correct. Number of words matches number of tests");
+	}
+	else{
+		console.log("Incorrect. Number of words does not match number of tests");
+	}
+
+	draw();
 	
 	/*
 	// Test SmartCanvas' canvas
