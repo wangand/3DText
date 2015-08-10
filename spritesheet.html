@@ -113,31 +113,123 @@ function Word(text, canvas, x, y, xc, yc){
 //		next y coordinate to write a word on new line
 //		current font
 //		texture, stores webgl texture of this canvas
-function SmartCanvas(font, height){
-	this.canvas;
+function SmartCanvas(font, size, height){
+	// Add new hidden canvas element
+	this.canvas = document.createElement("canvas");
+	document.body.appendChild(this.canvas);
+	this.canvas.height = size; // make sure size works for webgl texture
+	this.canvas.width = size;  // ie a square of power of 2
+	//this.canvas.setAttribute("style", "visibility:hidden;"); // hide the canvas
+
+	// Font and alignment
+	this.font = font;
+	var ctx = this.canvas.getContext("2d");
+	ctx.textBaseline="top"; //*** CRUCIAL CODE *** makes alignment standard
+
+	// Keep track of text locations
+	// Start at top left corner and work our way down
 	this.lastX = 0;
 	this.lastY = 0;
-	/*
+	// If height is defined, we already know height of line
 	if(height != undefined){
 		this.nextY = height;
-	}*/
-	this.currentFont = font;
+	}
+	else{ // otherwise calculate it
+		this.nextY = this.getFontHeight();
+	}
+
+	// Texture for webgl use
 	this.texture;
+	this.texUpdate = false; // true if we need to retexture on word add
 }
 //		testWord() see if there is room in canvas
+// Return values:
+// -1 if need new canvas
+// 0 if just write
+// 1 if new line needed
 SmartCanvas.prototype.testWord = function(text){
+	var ctx = this.canvas.getContext("2d");
+	//New canvas needed? eg. font size change
+	if(this.canvas.height < this.nextY + this.lastY){ // is there room this line?
+		return -1; // new canvas
+	}
+
+	if((this.canvas.width - this.lastX) < ctx.measureText(text).width){ // new line needed?
+		if(this.canvas.height < this.lastY+ this.nextY + this.nextY){ // is there room next line?
+			return -1; // new canvas
+		}
+		else{
+			return 1; // new line
+		}
+	}
+	else{ // just write
+		return 0;
+	}
 }
 //		writeWord() writes a word to canvas in next available space
-SmartCanvas.prototype.writeWord = function(text){
+// returns canvas coordinates the word is located [x, y]
+// To find quadrilateral: width, height, lastX, nextY
+SmartCanvas.prototype.writeWord = function(text, testval){
+	var ctx = this.canvas.getContext("2d");
+	var wordWidth = ctx.measureText(text).width;
+	var returnval = [this.lastX, this.lastY];
+	// On this line
+	if(testval === 0){
+		ctx.fillText(text, this.lastX, this.lastY);
+		this.lastX += wordWidth;
+	}
+	// On next line
+	else{
+		this.lastX = 0;
+		this.lastY += this.nextY;
+		ctx.fillText(text, this.lastX, this.lastY);
+		this.lastX += wordWidth;
+	}
+
+	// Let renderer know this canvas has been edited since last texture
+	this.texUpdate = true;
+
+	// return [x,y] start location of text
+	return returnval;
 }
 //		changeFont()
 SmartCanvas.prototype.changeFont = function(font){
+	//console.log("changefont: "+font);
+	this.font = font;
+	var ctx = this.canvas.getContext("2d");
+	ctx.textBaseline="top"; //*** CRUCIAL CODE *** makes alignment standard
+	ctx.font = font;
+
+	// Make sure to update nextY if font size is smaller
+	var tempHeight = this.getFontHeight();
+	if(this.nextY < tempHeight){
+		this.nextY = tempHeight;
+	}
 }
 //		returnFont()
 SmartCanvas.prototype.returnFont = function(){
+	return(this.font);
 }
 //		getFontHeight() gets height of font when font is changed
+// Adapted from this stackoverflow answer by Michaelangelo:
+//http://stackoverflow.com/questions/11452022/measure-text-height-on-an-html5-canvas-element
+// 1) create div with word and font used in canvas
+// 2) measure div
+// 3) remove div
 SmartCanvas.prototype.getFontHeight = function(){
+	//console.log("getfontheight: "+this.font);
+	var div = document.createElement("div");
+	div.style.position = 'absolute'; // required for making div start out small as possible
+	//div.style.left = '-999px';
+	//div.style.top = '-999px';
+	div.innerHTML = "Hg"; // High and Low word
+	//var ctx = this.canvas.getContext("2d");
+	var font = "font: "+this.font+";";
+	div.setAttribute("style", font);
+	document.body.appendChild(div);
+	var size = [div.offsetWidth, div.offsetHeight]; // keep this in case width is needed later
+	document.body.removeChild(div);
+	return size[1];
 }
 
 // Global variables
@@ -155,6 +247,52 @@ var loremipsum = [
 ];
 
 function main(){
+	// Test SmartCanvas' canvas
+	var newcanvas = new SmartCanvas("24px Times New Roman",512);
+	console.log(newcanvas.canvas);
+	var ctx = newcanvas.canvas.getContext("2d");
+	ctx.fillStyle = "red";
+	ctx.fillRect(newcanvas.canvas.width/2,newcanvas.canvas.height/2,10,10); // fill in the pixel at (10,10)
+
+	var widthHeight = newcanvas.writeWord("cat",0);
+	ctx.globalAlpha=0.2;
+	ctx.fillRect(widthHeight[0],widthHeight[1],newcanvas.lastX,newcanvas.nextY); // How to find coordinates for texture
+	ctx.globalAlpha=1.0;
+
+	// Test SmartCanvas' font functions
+	newcanvas.changeFont("50px Times New Roman");
+	console.log(newcanvas.nextY);
+	console.log(newcanvas.returnFont());
+
+	// Test SmartCanvas' writing functions
+	console.log("Original lastX: " + newcanvas.lastX);
+	widthHeight = newcanvas.writeWord("cat",0);
+	console.log("lastX after writing: " + newcanvas.lastX);
+	console.log(widthHeight);
+	ctx.globalAlpha=0.2;
+	ctx.fillRect(widthHeight[0],widthHeight[1],newcanvas.lastX-widthHeight[0],newcanvas.nextY); // How to find coordinates for texture
+	ctx.globalAlpha=1.0;
+
+	// Test SmartCanvas' packing functions
+	var testval = 0;
+	var counter = 0;
+	do{
+		testval = newcanvas.testWord("Magnet");
+		if(testval === -1){
+			break;
+		}
+		widthHeight = newcanvas.writeWord("Magnet", testval);
+		counter++;
+	}while(testval !== -1)
+	ctx.globalAlpha=0.2;
+	ctx.fillRect(widthHeight[0],widthHeight[1],newcanvas.lastX-widthHeight[0],newcanvas.nextY); // How to find coordinates for texture
+	ctx.globalAlpha=1.0;
+	console.log("Number of cats: "+counter);
+	console.log("Test value: "+testval)
+
+	// Test WordHolder canvas functionality
+
+
 	draw();
 }
 
@@ -190,6 +328,8 @@ function tryPack(lastX,lastY,word,canvas){
 }
 
 function draw(){
+
+/*
 	var canvas = document.getElementById("canvas2");
 	var ctx = canvas.getContext("2d");
 	ctx.textBaseline="top"; //*** CRUCIAL CODE ***
@@ -207,6 +347,7 @@ function draw(){
 	//var newXY = webglToCanvas(canvas.width-10,0, canvas);
 	//var newNewXY = canvasToWebgl(newXY[0], newXY[1], canvas);
 	//ctx.fillRect(newNewXY[0],newNewXY[1],10,10); // fill in the pixel at (10,10)
+*/
 }
 function animate(){
 	
