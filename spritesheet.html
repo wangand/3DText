@@ -6,11 +6,11 @@
   </head>
 
   <body onload="main()">
-    <canvas id="webgl" width="128" height="128" style="border:1px solid #000000;">
+    <canvas id="webgl" width="512" height="512" style="border:1px solid #000000;">
     Please use a browser that supports "canvas"
     </canvas>
-	<canvas id="canvas2" height=512" width="512" style="border:1px solid #000000; background:transparent; visibility:visible;">
-	</canvas>
+	<!--canvas id="canvas2" height=512" width="512" style="border:1px solid #000000; background:transparent; visibility:visible;">
+	</canvas-->
 	<div id="fps">fps info here</div>
 
 <script>
@@ -70,8 +70,7 @@ function WordHolder(){
 	this.canvasArray = [];
 	
 	// Start with 1 empty smartcanvas
-	this.canvasArray.push(new SmartCanvas('24px "Times New Roman"',this.defaultSize));
-	
+	this.canvasArray.push(new SmartCanvas('24px "Times New Roman"',this.defaultSize));	
 }
 // addWord(): User uses this function to add words
 WordHolder.prototype.addWord = function(text,x,y){
@@ -91,7 +90,8 @@ WordHolder.prototype.addWord = function(text,x,y){
 	
 	// Add word to wordArray
 	//Word(text, canvas, x, y, xc, yc, widthc, heightc)
-	this.wordArray.push(new Word(text, latest, x, y, widthHeight[0], widthHeight[1], widthHeight[0]-latest.lastX, latest.nextY));
+	// widthHeight[0],widthHeight[1],newcanvas.lastX,newcanvas.nextY
+	this.wordArray.push(new Word(text, latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], latest.nextY));
 }
 // tryAdd(): Adds a word to current canvas
 //			if canvas is full, adds another canvas
@@ -114,6 +114,7 @@ WordHolder.prototype.getFont = function(){
 	return(this.canvasArray[this.canvasArray.length-1].returnFont());
 }
 //render() renders all words in word holder
+// requires canvas ready for webgl rendering already
 // webglcanvas is the webgl canvas words should be rendered to
 WordHolder.prototype.render = function(webglcanvas){
 }
@@ -132,21 +133,22 @@ WordHolder.prototype.render = function(webglcanvas){
 //			quadrilateral verticies
 //			texture verticies
 function Word(text, canvas, x, y, xc, yc, widthc, heightc){
-	this.text; // text of the word
-	this.canvas; // which SmartCanvas the word is in
+	this.text = text; // text of the word
+	this.canvas = canvas; // which SmartCanvas the word is in
 	this.x = x; // x coordinate in webgl
 	this.y = y; // y coordinate in webgl
-	this.xc; // x coordinate on the canvas
-	this.yc; // y coordinate on the canvas
-	this.width = widthc; // width of text on canvas
-	this.height = heightc; // height of text on canvas
+	this.xc = xc; // x coordinate on the canvas
+	this.yc = yc; // y coordinate on the canvas
+	this.widthc = widthc; // width of text on canvas
+	this.heightc = heightc; // height of text on canvas
 	this.verticies;
 }
 
 // This function renders the word
+// requires canvas ready for webgl rendering already
 // glcanvas is the webgl canvas to render to
 Word.prototype.render = function (glcanvas){
-		this.verticies = new Float32Array([
+	this.verticies = new Float32Array([
 	// Vertex coordinates, texture coordinate
 		0.0,  0.0,   0.0, 1.0,
 		0.0,  0.0,   0.0, 0.0,
@@ -233,6 +235,7 @@ SmartCanvas.prototype.writeWord = function(text, testval){
 	else{
 		this.lastX = 0;
 		this.lastY += this.nextY;
+		returnval = [this.lastX, this.lastY]; // update return val
 		ctx.fillText(text, this.lastX, this.lastY);
 		this.lastX += wordWidth;
 	}
@@ -286,6 +289,30 @@ SmartCanvas.prototype.getFontHeight = function(){
 // Global variables
 var gl; // webgl program
 
+// Shader programs from code from matsuda and kanda 2012
+// Found in WebGL Programming Guide
+// Vertex shader program
+var VSHADER_SOURCE =
+  'attribute vec4 a_Position;\n' +
+  'attribute vec2 a_TexCoord;\n' +
+  'varying vec2 v_TexCoord;\n' +
+  'uniform vec4 u_Translation;\n' +
+  'void main() {\n' +
+  '  gl_Position = a_Position + u_Translation;\n' +
+  '  v_TexCoord = a_TexCoord;\n' +
+  '}\n';
+
+// Fragment shader program
+var FSHADER_SOURCE =
+  '#ifdef GL_ES\n' +
+  'precision mediump float;\n' +
+  '#endif\n' +
+  'uniform sampler2D u_Sampler;\n' +
+  'varying vec2 v_TexCoord;\n' +
+  'void main() {\n' +
+  '  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
+  '}\n';
+
 // Random words
 var loremipsum = [
 	"Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
@@ -298,6 +325,7 @@ var loremipsum = [
 ];
 
 function main(){
+
 	// Test WordHolder canvas functionality
 	// Test a new WordHolder
 	var holder = new WordHolder();
@@ -370,10 +398,52 @@ function main(){
 	else{
 		console.log("Incorrect. Number of words does not match number of tests");
 	}
+	
+	// Visually confirm that words are in boxes
+	var testWord;
+	for(i=0; i<holder.canvasArray.length; i++){
+		ctx = holder.canvasArray[i].canvas.getContext('2d');
+		ctx.globalAlpha=0.2;
+	}
+	for(i=0; i<holder.wordArray.length; i++){
+		testWord = holder.wordArray[i];
+		ctx = testWord.canvas.canvas.getContext('2d');
+		if(i%3 === 0){
+			ctx.fillStyle = "red"
+		}
+		else if(i%3 === 1){
+			ctx.fillStyle = 'blue';
+		}
+		else{
+			ctx.fillStyle = 'green';
+		}
+		ctx.fillRect(testWord.xc, testWord.yc, testWord.widthc, testWord.heightc); // How to find coordinates for texture
+	}
+	for(i=0; i<holder.canvasArray.length; i++){
+		ctx = holder.canvasArray[i].canvas.getContext('2d');
+		ctx.globalAlpha=1.0;
+	}
 
+	// Test render functions
+	// Word and WordHolder render functions assume webgl rendering set up already
+	// Retrieve <canvas> element
+	var canvas = document.getElementById('webgl');
+	// setup event handler
+	//canvas.onclick = (function(ev){click(ev,gl,canvas)});
+	// setup shader programs 
+	setupText(canvas);
+	// Specify the color for clearing <canvas>
+	gl.clearColor(0, 0, 0, 1);
+	// Clear <canvas>
+	gl.clear(gl.COLOR_BUFFER_BIT);
+	
+	// Test Word renderer
+	holder.wordArray[3].render(canvas);
+	
+	
 	draw();
 	
-	/*
+/*
 	// Test SmartCanvas' canvas
 	var newcanvas = new SmartCanvas("24px Times New Roman",512);
 	console.log(newcanvas.canvas);
