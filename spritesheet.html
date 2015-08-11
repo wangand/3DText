@@ -143,11 +143,14 @@ function Word(text, canvas, x, y, xc, yc, widthc, heightc){
 	this.heightc = heightc; // height of text on canvas
 	this.verticies;
 }
-
 // This function renders the word
 // requires canvas ready for webgl rendering already
 // glcanvas is the webgl canvas to render to
 Word.prototype.render = function (glcanvas){
+	// Make sure the texture is ready before any rendering
+	this.canvas.saveTexture();
+
+	// Calculate WebGL verticies
 	this.verticies = new Float32Array([
 	// Vertex coordinates, texture coordinate
 		0.0,  0.0,   0.0, 1.0,
@@ -156,7 +159,32 @@ Word.prototype.render = function (glcanvas){
 		0.0,  0.4,   1.0, 0.0,
 	]);
 }
+// This function placed here to keep everything in same class
+Word.prototype.webglToCanvas = function(x, y, canvas){
+	var width = canvas.width;
+	var height = canvas.height;
+	var newX;
+	var newY;
 
+	// Convert to webgl coordinates from canvas
+	newX = (x - width/2) / (width/2);
+	newY = (height/2 - y) / (height/2);
+	console.log(newX+" "+newY);
+	return [newX,newY];
+}
+// This function also placed here to keep everything in same class
+Word.prototype.canvasToWebgl = function(x, y, canvas){
+	var width = canvas.width;
+	var height = canvas.height;
+	var newX;
+	var newY;
+
+	// Convert to canvas coordinates from webgl
+	newX = (x*(width/2)) + width/2;
+	newY = ((1-y)*(height/2)); // broken
+	console.log(newX+" "+newY);
+	return [newX,newY];
+}
 
 //	Smartcanvas is a canvas with record keeping, contains:
 //		canvas,
@@ -192,7 +220,7 @@ function SmartCanvas(font, size, height){
 	}
 
 	// Texture for webgl use
-	this.texture;
+	//this.texture; // don't define yet
 	this.texUpdate = false; // true if we need to retexture on word add
 }
 //		testWord() see if there is room in canvas
@@ -219,7 +247,7 @@ SmartCanvas.prototype.testWord = function(text){
 		return 0;
 	}
 }
-//		writeWord() writes a word to canvas in next available space
+// WriteWord() writes a word to canvas in next available space
 // returns canvas coordinates the word is located [x, y]
 // To find quadrilateral: width, height, lastX, nextY
 SmartCanvas.prototype.writeWord = function(text, testval){
@@ -276,7 +304,7 @@ SmartCanvas.prototype.getFontHeight = function(){
 	div.style.position = 'absolute'; // required for making div start out small as possible
 	//div.style.left = '-999px';
 	//div.style.top = '-999px';
-	div.innerHTML = "Hg"; // High and Low word
+	div.innerHTML = "Hg"; // High and Low letters. Also mercury.
 	//var ctx = this.canvas.getContext("2d");
 	var font = "font: "+this.font+";";
 	div.setAttribute("style", font);
@@ -284,6 +312,21 @@ SmartCanvas.prototype.getFontHeight = function(){
 	var size = [div.offsetWidth, div.offsetHeight]; // keep this in case width is needed later
 	document.body.removeChild(div);
 	return size[1];
+}
+// This function saves a WebGL texture to this.texture
+// Without a texture, we cannot render textures
+SmartCanvas.prototype.saveTexture(){
+	// Create a new texture only once
+	if(!this.texture){
+		// create texture here	
+	}
+	
+	// Update texture only when needed
+	if(this.texUpdate === true){
+		// Update texture here
+
+		texUpdate = false; // Mark as updated
+	}
 }
 
 // Global variables
@@ -426,15 +469,15 @@ function main(){
 
 	// Test render functions
 	// Word and WordHolder render functions assume webgl rendering set up already
-	// Retrieve <canvas> element
+	// Retrieve canvas element
 	var canvas = document.getElementById('webgl');
 	// setup event handler
 	//canvas.onclick = (function(ev){click(ev,gl,canvas)});
 	// setup shader programs 
 	setupText(canvas);
-	// Specify the color for clearing <canvas>
+	// Specify the color for clearing canvas
 	gl.clearColor(0, 0, 0, 1);
-	// Clear <canvas>
+	// Clear canvas
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	
 	// Test Word renderer
