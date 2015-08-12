@@ -85,7 +85,7 @@ function Text(canvas, word, x, y, toX, toY){
 		return false;
 	}
 	// Load the texture
-	loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+	loadTexture(gl, texture, document.getElementById("canvas2"));
 	
 	// Set the variables for Text object
 	this.text = word;
@@ -257,7 +257,7 @@ function loadWord(word, x, y){
 		return false;
 	  }
 	  
-	  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+	  //loadTexture(gl, texture, document.getElementById("canvas2"));
 	  
 	  var temp = new Text(word, verticesTexCoords,x,y,texture);
 	  //words.push([word, verticesTexCoords, x,y, texture]);
@@ -571,13 +571,13 @@ function initTextures(gl, n) {
     return false;
   }
   
-  loadTexture(gl, n, texture, u_Sampler, document.getElementById("canvas2"));
+  loadTexture(gl, texture, document.getElementById("canvas2"));
   //loadTexture(gl, n, texture, u_Sampler, canvas2);
 
   return true;
 }
 
-function loadTexture(gl, n, texture, u_Sampler, image) {
+function loadTexture(gl, texture, image) {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
   // Enable texture unit0
   gl.activeTexture(gl.TEXTURE0);
@@ -587,15 +587,7 @@ function loadTexture(gl, n, texture, u_Sampler, image) {
   // Set the texture parameters
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   // Set the texture image
-  //gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  
-  // Set the texture unit 0 to the sampler
-  gl.uniform1i(u_Sampler, 0);
-  
-  //gl.clear(gl.COLOR_BUFFER_BIT);   // Clear <canvas>
-
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, n); // Draw the rectangle
 }
 
 	</script>
