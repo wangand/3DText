@@ -586,7 +586,7 @@ function animate(){
 	now = Date.now();
 	elapsed = now - then;
 	then = now;
-	document.getElementById("fps").innerHTML = Math.round(1000/elapsed);
+	document.getElementById("fps").innerHTML = "FPS: "+Math.round(1000/elapsed);
 	
 	// animate
 	if(doAnimate === true){
