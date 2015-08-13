@@ -1,2 +1,2 @@
 # 3DText
-Testing 3D text
+Testing normal text rendering in WebGL
