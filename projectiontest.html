@@ -181,9 +181,9 @@ TransformMatrix.prototype.CreateProject = function(x,y, webglcanvas){
 
 	this.tempArray = [
 		1/(width/2),  0.0, 0.0, 0.0, 
-		0.0,  1.0,  0.0, 0.0,
+		0.0,  -2/height,  0.0, 0.0,
 		0.0,  0.0, 1.0,  0.0,
-		-1.0,  0.0, 0.0, 1.0
+		-1.0,  1.0, 0.0, 1.0
 	];
 	this.floatArray = new Float32Array(this.tempArray);
 }
@@ -254,7 +254,7 @@ function click(ev, gl, canvas) {
   y = y-rect.top;
     
   //x = (x - canvas.width/2)/(canvas.width/2);
-  y = (canvas.height/2 - y)/(canvas.height/2);
+  //y = (canvas.height/2 - y)/(canvas.height/2);
   
 
   n = g_points.length/2;
@@ -265,7 +265,7 @@ function click(ev, gl, canvas) {
 		x+10,  y,
 		x+10,  y-10
 	]);
-	//console.log(vertices);
+	console.log(vertices);
   initVertexBuffers(gl, vertices);
 }
 
