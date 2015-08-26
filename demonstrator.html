@@ -16,8 +16,10 @@ hello
 <script src="SlothGL.js"></script>
 
 <script>
-//*********************************************************************************************
+//********************************************************************************************
 // Global variables
+var renderer = new SlothGL();
+
 // For keeping track of time
 var now, elapsed, then;
 
@@ -70,15 +72,40 @@ var loremipsum = [
 
 //******************************************************************************************
 function main(){
+	// Setup
+	var canvas = document.getElementById('myCanvas');
+	renderer.hello();
+	renderer.setup(canvas);
+	
+	// Project
+	renderer.projectCoordinates(canvas);
+	var transformation = renderer.projectionMatrix;
+	// Pass the transformation matrix to the vertex shader via Uniform Variable
+	var u_xformMatrix = renderer.gl.getUniformLocation(renderer.gl.program, 'u_xformMatrix');
+	if (!u_xformMatrix) {
+		console.log('Failed to get the storage location of u_xformMatrix');
+		return;
+	}
+	renderer.gl.uniformMatrix4fv(u_xformMatrix, false, transformation);
+	
+	// Clear <canvas>
+	renderer.clear();
+	
+	// setup event handler
+	canvas.onclick = (function(ev){click(ev,renderer,canvas)});
 	
 	//draw();
-	animate();
+	//animate();
 }
 main();
 
-function draw(){
-	
-		// Info about textures
+function draw(renderer){
+	// Clear WebGL canvas
+	renderer.clear();
+
+	renderer.gl.drawArrays(renderer.gl.TRIANGLE_STRIP, 0, 4);
+
+	// Info about textures
 	var infodiv = document.getElementById("infodiv");
 	infoString = "Textures Created: "+numTexCreate;
 	infoString += "<br>Textures Loaded: "+numTexLoad;
@@ -86,8 +113,8 @@ function draw(){
 	infoString += "<br>Texture size 512x512";
 	infodiv.innerHTML = infoString;
 }
-function animate(){
-	draw();
+function animate(renderer){
+	draw(renderer);
 	
 	// Calculate fps
 	now = Date.now();
@@ -98,26 +125,61 @@ function animate(){
 	// animate
 
 	
-	requestAnimationFrame(function(){animate()});
+	requestAnimationFrame(function(){animate(renderer)});
 }
 
-function click(ev, gl, canvas) {
-  var x = ev.clientX; // x coordinate of a mouse pointer
-  var y = ev.clientY; // y coordinate of a mouse pointer
-  var rect = ev.target.getBoundingClientRect() ;
+function click(ev, renderer, canvas) {
+	var x = ev.clientX; // x coordinate of a mouse pointer
+	var y = ev.clientY; // y coordinate of a mouse pointer
+	var rect = ev.target.getBoundingClientRect() ;
+
+	// Reduce error from bounding box
+	x = x-rect.left;
+	y = y-rect.top;
+
+	//x = (x - canvas.width/2)/(canvas.width/2);
+	//y = (canvas.height/2 - y)/(canvas.height/2);
+
+	//n = g_points.length/2;
+	var vertices = new Float32Array([
+	// Vertex coordinates, texture coordinate
+		x,  y,
+		x,  y-10,
+		x+10,  y,
+		x+10,  y-10
+	]);
+	//console.log(vertices);
+	initVertexBuffers(renderer.gl, vertices);
+	
+	draw(renderer);
+}
+
+function initVertexBuffers(gl, vertices) {
   
-  // Reduce error from bounding box
-  x = x-rect.left;
-  y = y-rect.top;
-  
-  //x = (x - canvas.width/2)/(canvas.width/2);
-  //y = (canvas.height/2 - y)/(canvas.height/2);
-  //console.log(x,y);
-  
-  words.addWord(loremipsum[Math.floor(Math.random()*loremipsum.length)], x, y);
-  var numWords = document.getElementById("numwords");
-  numWords.innerHTML = "Words: " + words.wordArray.length;
-  //draw();
+  // Create a buffer object
+  var vertexBuffer = gl.createBuffer();
+  if (!vertexBuffer) {
+    console.log('Failed to create the buffer object');
+    return -1;
+  }
+
+  // Bind the buffer object to target
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  // Write date into the buffer object
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+  if (a_Position < 0) {
+    console.log('Failed to get the storage location of a_Position');
+    return -1;
+  }
+  // Assign the buffer object to a_Position variable
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+
+  // Enable the assignment to a_Position variable
+  gl.enableVertexAttribArray(a_Position);
+
+  //return n;
 }
 
 </script>
