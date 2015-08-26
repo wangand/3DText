@@ -77,25 +77,13 @@ function main(){
 	renderer.hello();
 	renderer.setup(canvas);
 	
-	// Project
-	renderer.projectCoordinates(canvas);
-	var transformation = renderer.projectionMatrix;
-	// Pass the transformation matrix to the vertex shader via Uniform Variable
-	var u_xformMatrix = renderer.gl.getUniformLocation(renderer.gl.program, 'u_xformMatrix');
-	if (!u_xformMatrix) {
-		console.log('Failed to get the storage location of u_xformMatrix');
-		return;
-	}
-	renderer.gl.uniformMatrix4fv(u_xformMatrix, false, transformation);
-	
 	// Clear <canvas>
 	renderer.clear();
 	
 	// setup event handler
 	canvas.onclick = (function(ev){click(ev,renderer,canvas)});
 	
-	//draw();
-	//animate();
+	animate(renderer);
 }
 main();
 
@@ -124,7 +112,6 @@ function animate(renderer){
 	
 	// animate
 
-	
 	requestAnimationFrame(function(){animate(renderer)});
 }
 
@@ -133,14 +120,10 @@ function click(ev, renderer, canvas) {
 	var y = ev.clientY; // y coordinate of a mouse pointer
 	var rect = ev.target.getBoundingClientRect() ;
 
-	// Reduce error from bounding box
+	// Get correct coordinates from bounding box
 	x = x-rect.left;
 	y = y-rect.top;
 
-	//x = (x - canvas.width/2)/(canvas.width/2);
-	//y = (canvas.height/2 - y)/(canvas.height/2);
-
-	//n = g_points.length/2;
 	var vertices = new Float32Array([
 	// Vertex coordinates, texture coordinate
 		x,  y,
@@ -148,10 +131,9 @@ function click(ev, renderer, canvas) {
 		x+10,  y,
 		x+10,  y-10
 	]);
+	
 	//console.log(vertices);
 	initVertexBuffers(renderer.gl, vertices);
-	
-	draw(renderer);
 }
 
 function initVertexBuffers(gl, vertices) {

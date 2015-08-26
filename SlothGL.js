@@ -28,7 +28,7 @@ SlothGL = function(){
 }
 
 SlothGL.prototype.hello = function(){
-	console.log("yo");
+	console.log("SlothGL: WebGL for the lazy");
 }
 
 SlothGL.prototype.setup = function(canvas){
@@ -49,10 +49,21 @@ SlothGL.prototype.setup = function(canvas){
 	this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
 	// Initialize shaders
+	// this.gl is now defined
 	if (!this.initializeShaders(this.gl, this.vshader, this.fshader)) {
 		console.log('Failed to intialize shaders.');
 		return;
 	}
+	
+	// Set up the projection matrix for 2D canvas-like coordinates
+	this.reproject(canvas);
+	// Pass the transformation matrix to the vertex shader via Uniform Variable
+	var u_xformMatrix = this.gl.getUniformLocation(this.gl.program, 'u_xformMatrix');
+	if (!u_xformMatrix) {
+		console.log('Failed to get the storage location of u_xformMatrix');
+		return;
+	}
+	this.gl.uniformMatrix4fv(u_xformMatrix, false, this.projectionMatrix);
 }
 
 SlothGL.prototype.initializeShaders = function(gl, vshader, fshader){
@@ -138,7 +149,7 @@ SlothGL.prototype.clear = function(){
 	this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 }
 
-SlothGL.prototype.projectCoordinates = function(webglcanvas){
+SlothGL.prototype.reproject = function(webglcanvas){
 	// Formula
 	// newX = (x-width/2)/(width/2);
 	// newY = ((height-y)-(height/2)) / (height/2)
