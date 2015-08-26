@@ -1,0 +1,126 @@
+<html>
+<head>
+<title>Demonstrate WebGLSloth</title>
+</head>
+
+<body>
+<canvas id="myCanvas" width="512" height="512" style="border:1px solid #000000;">
+</canvas> 
+<div id="fps">
+hello
+</div>
+<div id="infodiv">
+hello
+</div>
+
+<script src="SlothGL.js"></script>
+
+<script>
+//*********************************************************************************************
+// Global variables
+// For keeping track of time
+var now, elapsed, then;
+
+// For the translation variables
+var Tx = 0.0, Ty = 0.0, Tz = 0.0;
+
+// testing info
+var numTexCreate = 0;
+var numTexLoad = 0;
+var numTexBind = 0;
+
+// Animate or not
+var doAnimate = true;
+
+// Shader programs from code from matsuda and kanda 2012
+// Found in WebGL Programming Guide
+// Vertex shader program
+var VSHADER_SOURCE =
+  'attribute vec4 a_Position;\n' +
+  'attribute vec2 a_TexCoord;\n' +
+  'varying vec2 v_TexCoord;\n' +
+  'uniform vec4 u_Translation;\n' +
+  'void main() {\n' +
+  '  gl_Position = a_Position + u_Translation;\n' +
+  '  v_TexCoord = a_TexCoord;\n' +
+  '}\n';
+
+// Fragment shader program
+var FSHADER_SOURCE =
+  '#ifdef GL_ES\n' +
+  'precision mediump float;\n' +
+  '#endif\n' +
+  'uniform sampler2D u_Sampler;\n' +
+  'varying vec2 v_TexCoord;\n' +
+  'void main() {\n' +
+  '  gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
+  '}\n';
+
+// Random words
+var loremipsum = [
+	"Lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,", "sed do",
+	"eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore", "magna", "aliqua.", "Ut enim", "ad", "minim",
+	"veniam,", "quis", "nostrud", "exercitation", "ullamco", "laboris", "nisi", "ut", "aliquip", "ex ea", "commodo", "consequat.",
+	"Duis", "aute", "irure", "dolor", "in", "reprehenderit", "in", "voluptate", "velit", "esse", "cillum", "dolore", "eu",
+	"fugiat", "nulla", "pariatur.", "Excepteur", "sint", "occaecat", "cupidatat", "non", "proident,", "sunt", "in", "culpa", 
+	"qui", "officia", "deserunt", "mollit", "anim", "id est", "laborum.",
+	"123", "456", "789", "0!@#"
+];
+
+
+//******************************************************************************************
+function main(){
+	
+	//draw();
+	animate();
+}
+main();
+
+function draw(){
+	
+		// Info about textures
+	var infodiv = document.getElementById("infodiv");
+	infoString = "Textures Created: "+numTexCreate;
+	infoString += "<br>Textures Loaded: "+numTexLoad;
+	infoString += "<br>Textures Bound: "+numTexBind;
+	infoString += "<br>Texture size 512x512";
+	infodiv.innerHTML = infoString;
+}
+function animate(){
+	draw();
+	
+	// Calculate fps
+	now = Date.now();
+	elapsed = now - then;
+	then = now;
+	document.getElementById("fps").innerHTML = "FPS: "+Math.round(1000/elapsed);
+	
+	// animate
+
+	
+	requestAnimationFrame(function(){animate()});
+}
+
+function click(ev, gl, canvas) {
+  var x = ev.clientX; // x coordinate of a mouse pointer
+  var y = ev.clientY; // y coordinate of a mouse pointer
+  var rect = ev.target.getBoundingClientRect() ;
+  
+  // Reduce error from bounding box
+  x = x-rect.left;
+  y = y-rect.top;
+  
+  //x = (x - canvas.width/2)/(canvas.width/2);
+  //y = (canvas.height/2 - y)/(canvas.height/2);
+  //console.log(x,y);
+  
+  words.addWord(loremipsum[Math.floor(Math.random()*loremipsum.length)], x, y);
+  var numWords = document.getElementById("numwords");
+  numWords.innerHTML = "Words: " + words.wordArray.length;
+  //draw();
+}
+
+</script>
+
+</body>
+</html>
