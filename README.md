@@ -15,6 +15,8 @@ Using is easy:<br />
 5) Call the render() method to display your work! <br />
 	renderer.render();
 
+<br /> See demonstrator.html for use example
+
 # 3DText
 Testing normal text rendering in WebGL
 (maybe should have named this WebGLText)
