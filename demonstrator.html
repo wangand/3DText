@@ -13,6 +13,8 @@ hello
 hello
 </div>
 
+<img id="sky" src="sky.JPG"></img><br>
+
 <script src="SlothGL.js"></script>
 
 <script>
@@ -80,9 +82,21 @@ function main(){
 	// Clear <canvas>
 	renderer.clear();
 	
+	// Write a word
+	renderer.fillText("text", 20, 20);
+	renderer.setFont("48px Times New Roman");
+	renderer.setColor("white");
+	renderer.fillText("cat", 200, 30);
+	renderer.setFont("24px Times New Roman");
+	renderer.setColor("red");
+	renderer.fillText("text", 20, 60);
+	console.log(renderer.textures.wordArray);
+	
+	var img = document.getElementById("sky");
+	renderer.drawImage(img, 50, 50, 50, 50)
+	
 	// setup event handler
 	canvas.onclick = (function(ev){click(ev,renderer,canvas)});
-	
 	animate(renderer);
 }
 main();
@@ -92,6 +106,7 @@ function draw(renderer){
 	renderer.clear();
 
 	renderer.gl.drawArrays(renderer.gl.TRIANGLE_STRIP, 0, 4);
+	renderer.render();
 
 	// Info about textures
 	var infodiv = document.getElementById("infodiv");
