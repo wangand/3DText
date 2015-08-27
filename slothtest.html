@@ -4,7 +4,7 @@
 </head>
 
 <body>
-<canvas id="myCanvas" width="512" height="512" style="border:1px solid #000000;">
+<canvas id="myCanvas" width="1024" height="512" style="border:1px solid #000000;">
 </canvas> 
 <div id="fps">
 hello
@@ -81,7 +81,21 @@ function main(){
 	
 	// Clear <canvas>
 	renderer.clear();
+	renderer.setFont("12px Times New Roman");
 	
+	// Test many words
+	var vertical = 50;
+	var horiz = 50;
+	for(i=0; i<vertical; i++){
+		for(j=0; j<horiz; j++){
+			// get a random word
+			index = Math.floor(Math.random()*loremipsum.length);
+			//words.addWord(loremipsum[index], 0+j*25, 0+i*12);  
+			renderer.fillText(loremipsum[index], 0+j*25, 0+i*12);
+		}
+	}
+
+/*	
 	// Write a word
 	renderer.fillText("text", 20, 20);
 	renderer.setFont("48px Times New Roman");
@@ -92,12 +106,12 @@ function main(){
 	renderer.fillText("text", 20, 60);
 	console.log(renderer.textures.wordArray);
 	
-	var img = document.getElementById("sky");
-	renderer.drawImage(img, 50, 50, 50, 50);
+	//var img = document.getElementById("sky");
+	//renderer.drawImage(img, 50, 50, 50, 50);
 	renderer.fillText("superextralongdinosauruslongerlongerlongreallyreallyreallylonglikereallyreally long123", 20, 160);
-	
+*/
 	// setup event handler
-	canvas.onclick = (function(ev){click(ev,renderer,canvas)});
+	//canvas.onclick = (function(ev){click(ev,renderer,canvas)});
 	animate(renderer);
 }
 main();
@@ -127,6 +141,11 @@ function animate(renderer){
 	document.getElementById("fps").innerHTML = "FPS: "+Math.round(1000/elapsed);
 	
 	// animate
+	for(i=0;i<renderer.textures.wordArray.length;i++){
+		renderer.textures.wordArray[i].Tx += (Math.random()*2 -1)/100;
+		renderer.textures.wordArray[i].Ty += (Math.random()*2 -1)/100;
+		//console.log(words.wordArray[i].Tx);
+	}
 
 	requestAnimationFrame(function(){animate(renderer)});
 }

@@ -16,6 +16,8 @@ Using is easy:<br />
 	renderer.render();
 
 <br /> See demonstrator.html for use example
+<br /> Please not that locally hosted images will cause images and text to not show up for security purposes.
+To prevent this, host your page on a server or use something like python's SimpleHTTPServer
 
 # 3DText
 Testing normal text rendering in WebGL

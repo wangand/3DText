@@ -221,8 +221,8 @@ SlothGL.prototype.fillText = function(text, x, y){
 	this.textures.addWord(text, x, y, this.gl);
 }
 
-SlothGL.prototype.drawImage = function(img, x, y, width, height){
-	this.textures.addImage(img, x, y, width, height);
+SlothGL.prototype.drawImage = function(img, x, y, width, height, gl){
+	this.textures.addImage(img, x, y, width, height, gl);
 	console.log("drawImage slothgl");
 }
 
@@ -240,7 +240,7 @@ function TextureHolder(){
 	this.canvasArray.push(new SmartCanvas('24px "Times New Roman"',this.defaultSize));	
 }
 
-TextureHolder.prototype.addImage = function(img, x, y, width, height){
+TextureHolder.prototype.addImage = function(img, x, y, width, height, gl){
 	var latest = this.canvasArray[this.canvasArray.length-1];
 	//this.canvasArray[this.canvasArray.length-1].drawImage(img, x, y, width, height);
 	
@@ -253,7 +253,7 @@ TextureHolder.prototype.addImage = function(img, x, y, width, height){
 		widthHeight = latest.drawImage(img, x, y, width, height, testval);
 	}
 	else{ // need new canvas
-		this.addCanvas();
+		this.addCanvas(gl);
 		latest = this.canvasArray[this.canvasArray.length-1];
 		widthHeight = latest.drawImage(img, x, y, width, height, testval);
 	}
@@ -273,13 +273,13 @@ TextureHolder.prototype.addWord = function(text, x, y, gl){
 		widthHeight = latest.writeWord(text, testval);
 	}
 	else{ // need new canvas
-		this.addCanvas();
+		this.addCanvas(gl);
 		latest = this.canvasArray[this.canvasArray.length-1];
 		widthHeight = latest.writeWord(text, 0);
 	}
 	
 	// Add word to wordArray
-	this.wordArray.push(new Word(text, latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], latest.lineHeight));
+	this.wordArray.push(new Word(text, latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], latest.lineHeight, gl));
 }
 
 TextureHolder.prototype.tryAdd = function(text){

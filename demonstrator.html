@@ -5,13 +5,7 @@
 
 <body>
 <canvas id="myCanvas" width="512" height="512" style="border:1px solid #000000;">
-</canvas> 
-<div id="fps">
-hello
-</div>
-<div id="infodiv">
-hello
-</div>
+</canvas>
 
 <img id="sky" src="sky.JPG"></img><br>
 <script src="SlothGL.js"></script>
@@ -36,11 +30,12 @@ renderer.setColor("red");
 renderer.fillText("text", 20, 60);
 //console.log(renderer.textures.wordArray);
 
-renderer.render();
+var img = document.getElementById("sky");
+renderer.drawImage(img, 50, 50, 50, 50);
+renderer.fillText("superextralongdinosauruslongerlongerlongreallyreallyreallylonglikereallyreally long123", 20, 160);
 
-//var img = document.getElementById("sky");
-//renderer.drawImage(img, 50, 50, 50, 50);
-//renderer.fillText("superextralongdinosauruslongerlongerlongreallyreallyreallylonglikereallyreally long123", 20, 160);
+// Call render() to see the stuff
+renderer.render();
 </script>
 
 </body>
