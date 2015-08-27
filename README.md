@@ -8,9 +8,9 @@ Using is easy:<br />
 3) Call the setup() method with your canvas <br />
  renderer.setup(canvas);<br />
 4) The following functions similar to the 2D canvas using the same familiar coordinate system <br />
- setFont()
- setColor()
- fillText(text, x, y)
+ setFont()<br />
+ setColor()<br />
+ fillText(text, x, y)<br />
  drawImage(img, x, y, width, height)<br />
 5) Call the render() method to display your work! <br />
  renderer.render();
