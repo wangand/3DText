@@ -4,16 +4,16 @@ To use, place the SlothGL.js file in your directory and add place it in a script
 Using is easy:<br />
 1) Make a canvas where you want to render WebGL <br />
 2) Create a SlothGL object. <br />
-- var renderer = new SlothGL();<br />
+ var renderer = new SlothGL();<br />
 3) Call the setup() method with your canvas <br />
-- renderer.setup(canvas);<br />
+ renderer.setup(canvas);<br />
 4) The following functions similar to the 2D canvas using the same familiar coordinate system <br />
-- setFont()
-- setColor()
-- fillText(text, x, y)
-- drawImage(img, x, y, width, height)<br />
+ setFont()
+ setColor()
+ fillText(text, x, y)
+ drawImage(img, x, y, width, height)<br />
 5) Call the render() method to display your work! <br />
-- renderer.render();
+ renderer.render();
 
 # 3DText
 Testing normal text rendering in WebGL
