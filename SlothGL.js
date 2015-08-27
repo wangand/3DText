@@ -260,7 +260,7 @@ TextureHolder.prototype.addImage = function(img, x, y, width, height){
 	
 	// Add word to wordArray
 	//this.wordArray.push(new Word("", latest, x, y, x, y, width, height));
-	this.wordArray.push(new Word("", latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], latest.lineHeight));
+	this.wordArray.push(new Word("", latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], height));
 }
 
 TextureHolder.prototype.addWord = function(text, x, y, gl){
