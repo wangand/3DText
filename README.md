@@ -1,18 +1,18 @@
 # SlothGL: WebGL for the Lazy
 To use, place the SlothGL.js file in your directory and add place it in a script tag.
 
-Using is easy:
+Using is easy:<br />
 1) Make a canvas where you want to render WebGL <br />
 2) Create a SlothGL object. <br />
 - var renderer = new SlothGL();
-3) Call the setup() method with your canvas <br />
+<br />3) Call the setup() method with your canvas <br />
 - renderer.setup(canvas);
-4) The following functions similar to the 2D canvas using the same familiar coordinate system <br />
+<br />4) The following functions similar to the 2D canvas using the same familiar coordinate system <br />
 - setFont()
 - setColor()
 - fillText(text, x, y)
 - drawImage(img, x, y, width, height)
-5) Call the render() method to display your work! <br />
+<br />5) Call the render() method to display your work! <br />
 - renderer.render();
 
 # 3DText
