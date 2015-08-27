@@ -454,7 +454,7 @@ function SmartCanvas(font, size, height){
 	this.canvas.width = size;  // ie a square of power of 2
 	this.canvas.setAttribute("style", "visibility:hidden;"); // hide the canvas
 	//if(DEBUG){
-		this.canvas.setAttribute("style", "visibility:visible;"); // unhide the canvas
+	//	this.canvas.setAttribute("style", "visibility:visible;"); // unhide the canvas
 	//}
 	// Font and alignment
 	this.font = font;
