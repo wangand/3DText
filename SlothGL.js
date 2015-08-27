@@ -332,7 +332,7 @@ TextureHolder.prototype.render = function(webglcanvas, gl){
 			if(i+1 != this.wordArray.length){
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, this.wordArray[i+1].canvas.texture);
-			numTexBind++;
+			//numTexBind++;
 			}
 		}
 		
@@ -382,7 +382,7 @@ Word.prototype.render = function (glcanvas, needUpdate, gl){
 		console.log('Failed to get the storage location of u_Translation');
 		return;
 	 }
-	 gl.uniform4f(u_Translation, this.Tx, this.Ty, Tz, 0.0);
+	 gl.uniform4f(u_Translation, this.Tx, this.Ty, 0.0, 0.0);
 	
 	// Render the array with vertices
 	// This needs to be called each time
@@ -639,7 +639,7 @@ SmartCanvas.prototype.saveTexture = function(gl){
 	if(!this.texture){
 		// create texture here	
 		this.texture = gl.createTexture();   // Create a texture object
-		numTexCreate++;
+		//numTexCreate++;
 			if (!this.texture) {
 				console.log('Failed to create the texture object');
 				return false;
@@ -658,7 +658,7 @@ SmartCanvas.prototype.saveTexture = function(gl){
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 		// Set the texture canvas
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.canvas);
-		numTexLoad++;
+		//numTexLoad++;
 		
 		// Mark as updated
 		this.texUpdate = false;
