@@ -241,10 +241,26 @@ function TextureHolder(){
 }
 
 TextureHolder.prototype.addImage = function(img, x, y, width, height){
-	console.log("drawImage textureholder");
 	var latest = this.canvasArray[this.canvasArray.length-1];
-	this.canvasArray[this.canvasArray.length-1].drawImage(img, x, y, width, height);
-	this.wordArray.push(new Word("", latest, x, y, x, y, width, height));
+	//this.canvasArray[this.canvasArray.length-1].drawImage(img, x, y, width, height);
+	
+	var latest = this.canvasArray[this.canvasArray.length-1];
+	var testval = latest.testImage(width,height);
+	var widthHeight;
+	
+	// Add to canvas according to testval
+	if(testval !== -1){ // no need for new canvas
+		widthHeight = latest.drawImage(img, x, y, width, height, testval);
+	}
+	else{ // need new canvas
+		this.addCanvas();
+		latest = this.canvasArray[this.canvasArray.length-1];
+		widthHeight = latest.drawImage(img, x, y, width, height, testval);
+	}
+	
+	// Add word to wordArray
+	//this.wordArray.push(new Word("", latest, x, y, x, y, width, height));
+	this.wordArray.push(new Word("", latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], latest.lineHeight));
 }
 
 TextureHolder.prototype.addWord = function(text, x, y, gl){
@@ -466,12 +482,55 @@ function SmartCanvas(font, size, height){
 	this.texUpdate = false; // true if we need to retexture on word add
 }
 
-SmartCanvas.prototype.drawImage = function(img, x, y, width, height){
-	console.log("drawImage smartcanvas");
+SmartCanvas.prototype.drawImage = function(img, x, y, width, height, testval){
 	var ctx = this.canvas.getContext("2d");
-	ctx.drawImage(img, x, y, width, height);
+	
+	
+	var ctx = this.canvas.getContext("2d");
+	var returnval = [this.lastX, this.lastY];
+	// On this line
+	if(testval === 0){
+		ctx.drawImage(img, this.lastX, this.lastY, width, height);
+		this.lastX += width;
+	}
+	// On next line
+	else{
+		this.lastX = 0;
+		//this.lastY += this.nextY;
+		this.lastY += this.nextY;
+		this.nextY = height;
+		//this.nextY = this.lineHeight;
+		returnval = [this.lastX, this.lastY]; // update return val
+		ctx.drawImage(img, this.lastX, this.lastY, width, height);
+		this.lastX += width;
+	}
+
+	// Let renderer know this canvas has been edited since last texture
+	this.texUpdate = true;
+
+	// return [x,y] start location of text
+	return returnval;
 }
 
+SmartCanvas.prototype.testImage = function(width, height){
+	var ctx = this.canvas.getContext("2d");
+	//New canvas needed? eg. font size change
+	if(this.canvas.height < height + this.lastY){ // is there room this line?
+		return -1; // new canvas
+	}
+
+	if((this.canvas.width - this.lastX) < width){ // new line needed?
+		if(this.canvas.height < this.lastY+ this.nextY + height){ // is there room next line?
+			return -1; // new canvas
+		}
+		else{
+			return 1; // new line
+		}
+	}
+	else{ // just write
+		return 0;
+	}
+}
 
 SmartCanvas.prototype.testWord = function(text){
 	var ctx = this.canvas.getContext("2d");
