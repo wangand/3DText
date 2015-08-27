@@ -236,8 +236,13 @@ function TextureHolder(){
 	// array [canvas, canvas, canvas, ...]
 	this.canvasArray = [];
 	
+	// for multiple texture registers
+	this.textureArray = new SmartTexture();
+	
 	// Start with 1 empty smartcanvas
-	this.canvasArray.push(new SmartCanvas('24px "Times New Roman"',this.defaultSize));	
+	var tempCanvas = new SmartCanvas('24px "Times New Roman"',this.defaultSize);
+	//this.canvasArray.push(new SmartCanvas('24px "Times New Roman"',this.defaultSize));	
+	this.canvasArray.push(tempCanvas);	
 }
 
 TextureHolder.prototype.addImage = function(img, x, y, width, height, gl){
@@ -292,7 +297,15 @@ TextureHolder.prototype.addCanvas = function(gl){
 	if(this.canvasArray[this.canvasArray.length-1].texUpdate === true){
 		this.canvasArray[this.canvasArray.length-1].saveTexture(gl);
 	}
-	this.canvasArray.push(new SmartCanvas(this.getFont(),this.defaultSize,this.nextY));
+	
+	// Pre-ready Canvas in texture registers until full
+	if(this.textureArray.array.length < this.textureArray.numTextureRegs){
+		this.textureArray.add(this.canvasArray[this.canvasArray.length-1]);
+	}
+	
+	var tempCanvas = new SmartCanvas(this.getFont(),this.defaultSize,this.nextY)
+	//this.canvasArray.push(new SmartCanvas(this.getFont(),this.defaultSize,this.nextY));
+	this.canvasArray.push(tempCanvas);
 }
 
 TextureHolder.prototype.setFont = function(font){
@@ -314,6 +327,8 @@ TextureHolder.prototype.setColor = function(color){
 TextureHolder.prototype.render = function(webglcanvas, gl){
 	var lastCanvas = undefined;
 	var needUpdate;
+	this.textureArray.add(this.canvasArray[this.canvasArray.length-1]);
+	
 	for(var i=0; i<this.wordArray.length; i++){
 		if(i==0){
 			gl.bindTexture(gl.TEXTURE_2D, this.wordArray[i].canvas.texture);
@@ -337,6 +352,63 @@ TextureHolder.prototype.render = function(webglcanvas, gl){
 		}
 		
 	}
+}
+
+// This object stores Canvases
+function SmartTexture(){
+	this.numTextureRegs = 8;
+	this.array = [];
+}
+
+// This method adds canvases
+SmartTexture.prototype.add = function(canvas){
+	// free registers
+	if(this.array.length < this.numTextureRegs){
+		this.array.push(canvas);
+	}
+	else{ // no free registers
+		// pop front
+		this.array.shift();
+		// now add new canvas
+		this.array.push(canvas);
+	}
+}
+
+// This method searches the smart Texture for a canvas
+// Returns register name if found
+// Retunrs 0 if not found
+SmartTexture.prototype.search = function(canvas, gl){
+	for(i=0; i<this.array.length; i++){
+		if(canvas === array[i]){
+			switch(i){
+				case 0:
+					return gl.TEXTURE0;
+					break;
+				case 1:
+					return gl.TEXTURE1;
+					break;
+				case 2:
+					return gl.TEXTURE2;
+					break;
+				case 3:
+					return gl.TEXTURE3;
+					break;
+				case 4:
+					return gl.TEXTURE4;
+					break;
+				case 5:
+					return gl.TEXTURE5;
+					break;
+				case 6:
+					return gl.TEXTURE6;
+					break;
+				case 7:
+					return gl.TEXTURE7;
+					break;
+			}
+		}
+	}
+	return 0;
 }
 
 function Word(text, canvas, x, y, xc, yc, widthc, heightc){
