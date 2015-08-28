@@ -327,8 +327,45 @@ TextureHolder.prototype.setColor = function(color){
 TextureHolder.prototype.render = function(webglcanvas, gl){
 	var lastCanvas = undefined;
 	var needUpdate;
-	this.textureArray.add(this.canvasArray[this.canvasArray.length-1]);
+	var tempCanvas;
 	
+	tempCanvas = this.textureArray.search(this.canvasArray[this.canvasArray.length-1], gl);
+	//console.log(tempCanvas);
+	if(tempCanvas === 0){
+		console.log("cat");
+		this.textureArray.add(this.canvasArray[this.canvasArray.length-1], gl);
+	}
+	
+	for(i=0; i< this.canvasArray.length; i++){
+		tempCanvas = this.textureArray.search(this.canvasArray[i].canvas, gl);
+		if(tempCanvas === 0){
+			this.textureArray.add(this.canvasArray[i].canvas, gl);
+		}
+		tempCanvas = this.textureArray.search(this.canvasArray[i].canvas, gl);
+		if(tempCanvas === 0){
+			console.log(i);
+		}
+		gl.activeTexture(tempCanvas);
+		gl.bindTexture(gl.TEXTURE_2D, this.canvasArray[i].texture);
+		//console.log(tempCanvas);
+	}
+	//console.log(this.textureArray);
+	
+	for(var i=0; i<this.wordArray.length; i++){
+		tempCanvas = this.textureArray.search(this.wordArray[i].canvas.canvas, gl);
+		if(tempCanvas === 0){
+			this.textureArray.add(this.wordArray[i].canvas.canvas, gl);
+			tempCanvas = this.textureArray.search(this.wordArray[i].canvas.canvas, gl);
+			gl.activeTexture(tempCanvas);
+			gl.bindTexture(gl.TEXTURE_2D, this.wordArray[i].canvas.texture);
+		}
+		else{
+			gl.activeTexture(tempCanvas);
+		}
+		this.wordArray[i].render2(webglcanvas, gl);
+	}
+	
+	/*
 	for(var i=0; i<this.wordArray.length; i++){
 		if(i==0){
 			gl.bindTexture(gl.TEXTURE_2D, this.wordArray[i].canvas.texture);
@@ -352,6 +389,7 @@ TextureHolder.prototype.render = function(webglcanvas, gl){
 		}
 		
 	}
+	*/
 }
 
 // This object stores Canvases
@@ -379,7 +417,7 @@ SmartTexture.prototype.add = function(canvas){
 // Retunrs 0 if not found
 SmartTexture.prototype.search = function(canvas, gl){
 	for(i=0; i<this.array.length; i++){
-		if(canvas === array[i]){
+		if(canvas === this.array[i]){
 			switch(i){
 				case 0:
 					return gl.TEXTURE0;
@@ -489,6 +527,76 @@ Word.prototype.render = function (glcanvas, needUpdate, gl){
 	//	gl.bindTexture(gl.TEXTURE_2D, this.canvas.texture);
 	//	numTexBind++;
 	//}
+
+	// Set the texture parameters
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+	var u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+		if (!u_Sampler) {
+		console.log('Failed to get the storage location of u_Sampler');
+		return false;
+	}
+
+	// Set the texture unit 0 to the sampler
+	gl.uniform1i(u_Sampler, 0);
+	
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // Draw the rectangle
+}
+
+Word.prototype.render2 = function (glcanvas, gl){
+	// Make sure the texture is ready before any rendering
+	this.canvas.saveTexture(gl);
+
+	// Calculate WebGL verticies
+	var tex00 = this.canvasToST(this.xc, this.yc);
+	var tex01 = this.canvasToST(this.xc, this.yc+this.heightc);
+	var tex10 = this.canvasToST(this.xc+this.widthc, this.yc);
+	var tex11 = this.canvasToST(this.xc+this.widthc, this.yc+this.heightc);
+	
+	var cor00 = [this.x,this.y];
+	var cor01 = [this.x,this.y+this.heightc];
+	var cor10 = [this.x+this.widthc,this.y];
+	var cor11 = [this.x+this.widthc,this.y+this.heightc];
+	
+	this.vertices = new Float32Array([
+	// Vertex coordinates, texture coordinate
+		cor00[0],  cor00[1],   tex00[0], tex00[1],
+		cor01[0],  cor01[1],   tex01[0], tex01[1],
+		cor10[0],  cor10[1],   tex10[0], tex10[1],
+		cor11[0],  cor11[1],   tex11[0], tex11[1]
+	]);
+	
+	// Pass the translation distance to the vertex shader
+	 var u_Translation = gl.getUniformLocation(gl.program, 'u_Translation');
+	 if (!u_Translation) {
+		console.log('Failed to get the storage location of u_Translation');
+		return;
+	 }
+	 gl.uniform4f(u_Translation, this.Tx, this.Ty, 0.0, 0.0);
+	
+	// Render the array with vertices
+	// This needs to be called each time
+	gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
+
+	var FSIZE = this.vertices.BYTES_PER_ELEMENT;
+	//Get the storage location of a_Position, assign and enable buffer
+	var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+	if (a_Position < 0) {
+		console.log('Failed to get the storage location of a_Position');
+		return -1;
+	}
+	gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+	gl.enableVertexAttribArray(a_Position);  // Enable the assignment of the buffer object
+
+	// Get the storage location of a_TexCoord
+	var a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
+	if (a_TexCoord < 0) {
+		console.log('Failed to get the storage location of a_TexCoord');
+		return -1;
+	}
+	// Assign the buffer object to a_TexCoord variable
+	gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+	gl.enableVertexAttribArray(a_TexCoord);  // Enable the assignment of the buffer object
 
 	// Set the texture parameters
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -723,7 +831,7 @@ SmartCanvas.prototype.saveTexture = function(gl){
 	if(this.texUpdate === true){
 		// Ready texture binding
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-		gl.activeTexture(gl.TEXTURE0); // Enable texture unit0
+		//gl.activeTexture(gl.TEXTURE0); // Enable texture unit0
 		gl.bindTexture(gl.TEXTURE_2D, this.texture); // Bind the texture object to the target
 
 		// Set the texture properties
