@@ -1,3 +1,14 @@
+// This Class contains the SlothGL renderer.
+// A SlothGL object must be created before using the features.
+// A SlothGL object contains:
+// vshader: a string containing vertex shader code
+// fshader: a string containing fragment shader code
+// gl: the WebGL program
+// textures: a texture holder object of class TextureHolder
+// projectionMatrix: a float32 array that translates canvas coordinates to WebGL coordinates
+// color: font color
+// font: canvas font
+// canvas: the 3D WebGL canvas
 SlothGL = function(){
 	// Shaders
 	this.vshader = 
