@@ -56,10 +56,15 @@ SlothGL = function(){
 	this.canvas;
 }
 
+// This function just says hello
+// Maybe can help user know that SlothGL was correctly added
 SlothGL.prototype.hello = function(){
 	console.log("SlothGL: WebGL for the lazy");
 }
 
+// This function sets up the renderer
+// canvas is an html5 canvas that the user wants to render to
+// After the function is called, rendering with other webgl functions should work
 SlothGL.prototype.setup = function(canvas){
 	this.canvas = canvas;
 	
@@ -106,6 +111,10 @@ SlothGL.prototype.setup = function(canvas){
 	this.gl.uniformMatrix4fv(u_xformMatrix, false, this.projectionMatrix);
 }
 
+// This function initializes the vertex and fragment shaders
+// gl is the webgl program that is to be initialized
+// vshader is a string containing the glsl code for the vertex shader
+// fshader is a string containing the glsl code for the fragment shader
 SlothGL.prototype.initializeShaders = function(gl, vshader, fshader){
 	// make and verify vertex shader object
 	var vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -181,6 +190,7 @@ SlothGL.prototype.initializeShaders = function(gl, vshader, fshader){
 	return true;
 }
 
+// This function clears the webgl canvas
 SlothGL.prototype.clear = function(){
 	// Specify the color for clearing <canvas>
 	this.gl.clearColor(0, 0, 0, 1);
@@ -189,6 +199,9 @@ SlothGL.prototype.clear = function(){
 	this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 }
 
+// This function sets the projection matrix of the SlothGL object
+// The projection matrix changes 2D canvas coordinates into webgl coordinates
+// webglcanvas is the canvas to which the user wishes to render
 SlothGL.prototype.reproject = function(webglcanvas){
 	// Formula
 	// newX = (x-width/2)/(width/2);
@@ -210,33 +223,57 @@ SlothGL.prototype.reproject = function(webglcanvas){
 	this.projectionMatrix = new Float32Array(tempArray);
 }
 
+// This function renders whatever images have been set
 SlothGL.prototype.render = function(){
 	this.textures.render(this.canvas, this.gl);
 }
 
+// This function sets the text color
+// color is the color you want to use eg. "red" "#ff0000"
 SlothGL.prototype.setColor = function(color){
 	this.color = color;
 	this.textures.setColor(color);
 }
 
+// This function returns the color for rendering text
 SlothGL.prototype.getColor = function(){
 	return(this.textures.getColor());
 }
 
+// This function sets the font for rendering text
+// font is the font the user wishes to add
 SlothGL.prototype.setFont = function(font){
 	this.font = font;
 	this.textures.setFont(font);
 }
 
+// This function adds some text to the webgl program
+// text is the text you wish to render
+// x is the x coordinate of the text in 2D canvas coordinates
+// y is the y coordinate of the text in 2D canvas coordinates
 SlothGL.prototype.fillText = function(text, x, y){
 	this.textures.addWord(text, x, y, this.gl);
 }
 
+// This function draws an image
+// The user first needs an image in an image tag
+// img is the image
+// x is the x coordinate in 2D canvas coordinates
+// y is the y coordinate in 2D canvas coordinates
+// width is the width of the image
+// height is the height of the image
+// gl is the webgl program 
 SlothGL.prototype.drawImage = function(img, x, y, width, height, gl){
 	this.textures.addImage(img, x, y, width, height, gl);
 	console.log("drawImage slothgl");
 }
 
+// TextureHolder is an object that holds textures
+// the SlothGL object contains a TextureHolder
+// defaultSize is the size of one texture defaults to 1024
+// wordArray is an array of words
+// canvasArray is an array of smart canvases for storing textures
+// textrureArray is a SmartTexture object
 function TextureHolder(){
 	// Default size of canvas
 	this.defaultSize = 1024; // here for easy access
@@ -256,6 +293,14 @@ function TextureHolder(){
 	this.canvasArray.push(tempCanvas);	
 }
 
+// This function adds an image to the TextureHolder
+// most likely called from adding an image in SlothGL
+// img is the image
+// x is the x coordinate in 2D canvas coordinates
+// y is the y coordinate in 2D canvas coordinates
+// width is the width of an image
+// height is the height of an image
+// gl is the webgl program
 TextureHolder.prototype.addImage = function(img, x, y, width, height, gl){
 	var latest = this.canvasArray[this.canvasArray.length-1];
 	//this.canvasArray[this.canvasArray.length-1].drawImage(img, x, y, width, height);
@@ -279,6 +324,11 @@ TextureHolder.prototype.addImage = function(img, x, y, width, height, gl){
 	this.wordArray.push(new Word("", latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], height));
 }
 
+// This function adds a word to the TextureHolder object
+// most likely called from SlothGL call
+// text is the text to be rendereed
+// x is the x coordinate of the text in 2D canvas coordinates
+// y is the y coordinate of the text in 2D canvas coordinates
 TextureHolder.prototype.addWord = function(text, x, y, gl){
 	var testval = this.tryAdd(text);
 	var latest = this.canvasArray[this.canvasArray.length-1];
@@ -298,10 +348,19 @@ TextureHolder.prototype.addWord = function(text, x, y, gl){
 	this.wordArray.push(new Word(text, latest, x, y, widthHeight[0], widthHeight[1], latest.lastX-widthHeight[0], latest.lineHeight, gl));
 }
 
+// This function tries to add a text to a texture holder
+// text is the text that the function tries to fit on the screen
+// The function tries to fit text to the latest canvas in use
+// returns: 
+//	0 if word fits
+//  1 if new line needed
+// -1 if a new canvas needs to be created
 TextureHolder.prototype.tryAdd = function(text){
 	return(this.canvasArray[this.canvasArray.length-1].testWord(text));
 }
 
+// This function adds a new canvas to the texture holder
+// gl is the webgl program in use
 TextureHolder.prototype.addCanvas = function(gl){
 	// Add a canvas
 	// we should already know this.nextY so passing it saves us a calculation
@@ -319,22 +378,35 @@ TextureHolder.prototype.addCanvas = function(gl){
 	this.canvasArray.push(tempCanvas);
 }
 
+// This function sets the font of the TextureHolder
+// most likely called from a SlothGL function
+// font is the font to be set
 TextureHolder.prototype.setFont = function(font){
 	this.canvasArray[this.canvasArray.length-1].changeFont(font);
 }
 
+// This function gets the font of the TextureHolder
+// most likely called from a SlothGL function
 TextureHolder.prototype.getFont = function(){
 	return(this.canvasArray[this.canvasArray.length-1].returnFont());
 }
 
+// This function gets the color of the TextureHolder
+// most likely called from a SlothGL function
 TextureHolder.prototype.getColor = function(){
 	return(this.canvasArray[this.canvasArray.length-1].returnColor());
 }
 
+// This function sets the color of the TextureHolder
+// most likely called from a SlothGL function
+// color is the color to be set
 TextureHolder.prototype.setColor = function(color){
 	this.canvasArray[this.canvasArray.length-1].changeColor(color);
 }
 
+// This function renders the contents of the TextureHolder
+// webglcanvas is the canvas where the contents will be rendered
+// gl is the webgl program that will be used
 TextureHolder.prototype.render = function(webglcanvas, gl){
 	var lastCanvas = undefined;
 	var needUpdate;
@@ -460,6 +532,8 @@ SmartTexture.prototype.search = function(canvas, gl){
 	return 0;
 }
 
+// Word is an object that stores text
+// text, coordinates, and its location on a canvas are stored
 function Word(text, canvas, x, y, xc, yc, widthc, heightc){
 	this.text = text; // text of the word
 	this.canvas = canvas; // which SmartCanvas the word is in
@@ -469,11 +543,17 @@ function Word(text, canvas, x, y, xc, yc, widthc, heightc){
 	this.yc = yc; // y coordinate on the canvas
 	this.widthc = widthc; // width of text on canvas
 	this.heightc = heightc; // height of text on canvas
-	this.verticies;
-	this.Tx = 0.0;
-	this.Ty = 0.0;
+	this.verticies; // a float32 array of verticies
+	this.Tx = 0.0; // translation in x coordinate
+	this.Ty = 0.0; // translation in y coordinate
 }
 
+// NOT USED
+// This function renders the word itself
+// most likely called from TextureHolder
+// glcanvas is the canvas to which the user wants to render
+// needUpdate indicates if the texture needs an update
+// gl is the webgl program
 Word.prototype.render = function (glcanvas, needUpdate, gl){
 	// Make sure the texture is ready before any rendering
 	this.canvas.saveTexture(gl);
@@ -554,6 +634,10 @@ Word.prototype.render = function (glcanvas, needUpdate, gl){
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // Draw the rectangle
 }
 
+// This function renders the word itself
+// most likely called from TextureHolder
+// glcanvas is the canvas to which the user wants to render
+// gl is the webgl program
 Word.prototype.render2 = function (glcanvas, gl){
 	// Make sure the texture is ready before any rendering
 	this.canvas.saveTexture(gl);
@@ -624,6 +708,9 @@ Word.prototype.render2 = function (glcanvas, gl){
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // Draw the rectangle
 }
 
+// This function converts 2D canvas coordinates to ST coordinates
+// x is the 2D canvas x coordinate
+// y is the 2D canvas y coordinate
 Word.prototype.canvasToST = function(x, y){
 	var width = this.canvas.canvas.width;
 	var height = this.canvas.canvas.height;
@@ -637,6 +724,10 @@ Word.prototype.canvasToST = function(x, y){
 	return [newX,newY];
 }
 
+// This object is a canvas with additional data for stacking textures
+// font is the default font for text rendering
+// size is the size of the square canvas
+// height is the default line height
 function SmartCanvas(font, size, height){
 	// Add new hidden canvas element
 	this.canvas = document.createElement("canvas");
@@ -673,6 +764,16 @@ function SmartCanvas(font, size, height){
 	this.texUpdate = false; // true if we need to retexture on word add
 }
 
+// This function draws an image to the SmartCanvas
+// img is the image
+// x is the x coordinate of the image in 2D canvas coordinates
+// y is the y coordinate of the image in 2D canvas coordinates
+// width is the width of the image
+// height is the height of the image
+// testval shows how to render image to canvas
+// 	if 0: just render image
+//	if 1: render on new line
+//	if -1: create new canvas
 SmartCanvas.prototype.drawImage = function(img, x, y, width, height, testval){
 	var ctx = this.canvas.getContext("2d");
 	
@@ -703,6 +804,12 @@ SmartCanvas.prototype.drawImage = function(img, x, y, width, height, testval){
 	return returnval;
 }
 
+// This function tests if an image will fit to the SmartCanvas
+// width is the width of the image
+// height is the height of the image
+// returns -1 is a new canvas is needed
+//	1 if a newline is needed
+//	0 if can just be rendered
 SmartCanvas.prototype.testImage = function(width, height){
 	var ctx = this.canvas.getContext("2d");
 	//New canvas needed? eg. font size change
@@ -723,6 +830,11 @@ SmartCanvas.prototype.testImage = function(width, height){
 	}
 }
 
+// This function tests if there is room for a word on the SmartCanvas
+// text is the word to be tested
+// returns -1 is a new canvas is needed
+//	1 if a newline is needed
+//	0 if can just be rendered
 SmartCanvas.prototype.testWord = function(text){
 	var ctx = this.canvas.getContext("2d");
 	//New canvas needed? eg. font size change
@@ -742,6 +854,7 @@ SmartCanvas.prototype.testWord = function(text){
 		return 0;
 	}
 }
+
 // WriteWord() writes a word to canvas in next available space
 // returns canvas coordinates the word is located [x, y]
 // To find quadrilateral: width, height, lastX, nextY
@@ -772,7 +885,11 @@ SmartCanvas.prototype.writeWord = function(text, testval){
 	// return [x,y] start location of text
 	return returnval;
 }
-//		changeFont()
+
+// This function changes the font of a SmartCanvas
+// font is the font to be changed
+// This function changes the font and then updates info of the SmartCanvas
+// Makes sure the height info stays correct once font is changed
 SmartCanvas.prototype.changeFont = function(font){
 	//console.log("changefont: "+font);
 	this.font = font;
@@ -788,16 +905,19 @@ SmartCanvas.prototype.changeFont = function(font){
 	}
 }
 
+// This function changes the text color of a SmartCanvas
+// color is the color to be changed to
 SmartCanvas.prototype.changeColor = function(color){
 	var ctx = this.canvas.getContext("2d");
 	ctx.fillStyle = color;
 }
 
-//		returnFont()
+// This function returns the font of a SmartCanvas
 SmartCanvas.prototype.returnFont = function(){
 	return(this.font);
 }
 
+// This function returns the text color of a SmartCanvas
 SmartCanvas.prototype.returnColor = function(){
 	return(this.canvas.getContext("2d").fillStyle);
 }
@@ -823,8 +943,10 @@ SmartCanvas.prototype.getFontHeight = function(){
 	document.body.removeChild(div);
 	return size[1];
 }
+
 // This function saves a WebGL texture to this.texture
 // Without a texture, we cannot render textures
+// gl is the webgl program in use
 SmartCanvas.prototype.saveTexture = function(gl){
 	// Create a new texture only once
 	if(!this.texture){
